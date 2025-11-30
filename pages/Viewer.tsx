@@ -3,7 +3,7 @@ import {
   ReactFlow, 
   ReactFlowProvider, 
   Background, 
-  useNodesState,
+  useNodesState, 
   useEdgesState, 
   Node,
   ProOptions,
@@ -14,6 +14,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MousePointer2, Eye, Box, ChevronUp, ChevronDown, AlertTriangle, Terminal } from 'lucide-react';
 import CustomNode from '../components/CustomNode';
 import NoteNode from '../components/NoteNode';
+import CustomEdge from '../components/CustomEdge';
 import NodeConfigPanel from '../components/NodeConfigPanel';
 import CanvasControls from '../components/CanvasControls';
 import { getLayoutedElements } from '../utils/layoutUtils';
@@ -23,6 +24,10 @@ import { workflowService } from '../services/workflowService';
 const nodeTypes = {
   custom: CustomNode,
   note: NoteNode,
+};
+
+const edgeTypes = {
+  smoothstep: CustomEdge,
 };
 
 const proOptions: ProOptions = { hideAttribution: true };
@@ -158,6 +163,7 @@ const ViewerContent = () => {
               onNodeClick={onNodeClick}
               onPaneClick={onPaneClick}
               nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               // Allow dragging in Read mode per request
               nodesDraggable={true} 
               // Prevent connections in Read mode

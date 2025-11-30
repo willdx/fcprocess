@@ -21,11 +21,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Save, 
   MousePointer2, Eye, Box, Copy, Trash2, AlertTriangle,
-  LayoutGrid, StickyNote
+  LayoutGrid
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import CustomNode from '../components/CustomNode';
 import NoteNode from '../components/NoteNode';
+import CustomEdge from '../components/CustomEdge';
 import NodeConfigPanel from '../components/NodeConfigPanel';
 import CanvasControls from '../components/CanvasControls';
 import Toast from '../components/Toast';
@@ -36,6 +37,10 @@ import { workflowService } from '../services/workflowService';
 const nodeTypes = {
   custom: CustomNode,
   note: NoteNode,
+};
+
+const edgeTypes = {
+  smoothstep: CustomEdge,
 };
 
 const proOptions: ProOptions = { hideAttribution: true };
@@ -152,23 +157,6 @@ const EditorContent = () => {
     addToHistory(nodes, newEdges);
     setIsDirty(true);
   }, [edges, nodes, setNodes, setEdges]);
-
-  // Double click edge to add/edit label
-  const onEdgeDoubleClick = useCallback((event: React.MouseEvent, edge: Edge) => {
-    event.stopPropagation();
-    
-    // Direct prompt without timeout to ensure it triggers immediately on user action
-    const label = window.prompt('Enter edge label:', (edge.label as string) || '');
-    
-    if (label !== null) {
-      const newEdges = edges.map(e => 
-        e.id === edge.id ? { ...e, label } : e
-      );
-      setEdges(newEdges);
-      addToHistory(nodes, newEdges);
-      setIsDirty(true);
-    }
-  }, [edges, nodes, setEdges]);
 
   const addToHistory = (n: Node[], e: Edge[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -453,8 +441,8 @@ const EditorContent = () => {
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
             onNodeContextMenu={onNodeContextMenu}
-            onEdgeDoubleClick={onEdgeDoubleClick}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             proOptions={proOptions}
             defaultEdgeOptions={defaultEdgeOptions}
             fitView
