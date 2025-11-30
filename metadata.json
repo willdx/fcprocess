@@ -1,0 +1,5 @@
+{
+  "name": "Fucai Flow Designer",
+  "description": "A microservice architecture flowchart designer with drag-and-drop capabilities, auto-layout, and observability mocking.",
+  "requestFramePermissions": []
+}
