@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Node } from '@xyflow/react';
-import { X, Save } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface NodeConfigPanelProps {
   selectedNode: Node | null;
@@ -32,12 +32,15 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ selectedNode, onUpdat
 
   if (!selectedNode) return null;
 
-  const handleSave = () => {
+  // Commit changes to the global state
+  const handleUpdate = (updates: Partial<{ label: string; description: string; namespace: string }>) => {
+    if (readOnly) return;
+    
     onUpdate(selectedNode.id, {
       ...selectedNode.data,
-      label,
-      description,
-      namespace
+      label: updates.label !== undefined ? updates.label : label,
+      description: updates.description !== undefined ? updates.description : description,
+      namespace: updates.namespace !== undefined ? updates.namespace : namespace
     });
   };
 
@@ -64,6 +67,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ selectedNode, onUpdat
             type="text" 
             value={label}
             onChange={(e) => setLabel(e.target.value)}
+            onBlur={() => handleUpdate({ label })}
             disabled={readOnly}
             className="w-full p-2 border border-slate-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:bg-slate-50 disabled:text-slate-500"
           />
@@ -74,7 +78,11 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ selectedNode, onUpdat
           <div className="relative">
             <select
               value={namespace}
-              onChange={(e) => setNamespace(e.target.value)}
+              onChange={(e) => {
+                const newVal = e.target.value;
+                setNamespace(newVal);
+                handleUpdate({ namespace: newVal });
+              }}
               disabled={readOnly}
               className="w-full p-2 border border-slate-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:bg-slate-50 disabled:text-slate-500 appearance-none bg-white"
             >
@@ -93,24 +101,13 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ selectedNode, onUpdat
           <textarea 
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            onBlur={() => handleUpdate({ description })}
             disabled={readOnly}
             rows={4}
             className="w-full p-2 border border-slate-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none disabled:bg-slate-50 disabled:text-slate-500"
           />
         </div>
       </div>
-
-      {!readOnly && (
-        <div className="p-4 border-t border-slate-100 bg-slate-50">
-          <button 
-            onClick={handleSave}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-md font-medium transition-colors"
-          >
-            <Save size={18} />
-            Apply Changes
-          </button>
-        </div>
-      )}
     </aside>
   );
 };
