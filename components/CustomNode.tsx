@@ -13,6 +13,8 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
   const attachedNote = data.attachedNote as string || '';
   const [showNote, setShowNote] = useState(false);
   const [noteContent, setNoteContent] = useState(attachedNote);
+  
+  const readOnly = data?.readOnly as boolean;
 
   // Sync local state if data changes externally
   useEffect(() => {
@@ -88,9 +90,12 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
             value={noteContent}
             onChange={handleNoteChange}
             onBlur={handleNoteBlur}
-            placeholder="Add a note..."
-            className="w-full bg-transparent text-xs text-slate-700 placeholder:text-yellow-700/30 resize-y min-h-[60px] max-h-[200px] outline-none p-2 nodrag"
-            // 'nodrag' class ensures dragging text selection doesn't move the node
+            readOnly={readOnly}
+            placeholder={readOnly ? "No attached note" : "Add a note..."}
+            className={clsx(
+              "w-full bg-transparent text-xs text-slate-700 placeholder:text-yellow-700/30 resize-y min-h-[60px] max-h-[200px] outline-none p-2 nodrag",
+              readOnly && "resize-none"
+            )}
           />
         </div>
       )}

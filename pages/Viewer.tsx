@@ -62,8 +62,20 @@ const ViewerContent = () => {
 
         // Load graph
         const graph = await workflowService.getWorkflowGraph(id);
-        setNodes(graph.nodes);
-        setEdges(graph.edges);
+        
+        // Inject readOnly: true into nodes and edges
+        const readOnlyNodes = graph.nodes.map(n => ({
+          ...n,
+          data: { ...n.data, readOnly: true }
+        }));
+        
+        const readOnlyEdges = graph.edges.map(e => ({
+          ...e,
+          data: { ...e.data, readOnly: true }
+        }));
+
+        setNodes(readOnlyNodes);
+        setEdges(readOnlyEdges);
       }
     };
     loadData();

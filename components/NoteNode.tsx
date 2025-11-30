@@ -8,6 +8,8 @@ const NoteNode = ({ id, data, selected }: NodeProps) => {
   const [content, setContent] = useState(data.label as string || '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { setNodes } = useReactFlow();
+  
+  const readOnly = data?.readOnly as boolean;
 
   useEffect(() => {
     setContent(data.label as string || '');
@@ -20,7 +22,9 @@ const NoteNode = ({ id, data, selected }: NodeProps) => {
   }, [isEditing]);
 
   const handleDoubleClick = () => {
-    setIsEditing(true);
+    if (!readOnly) {
+      setIsEditing(true);
+    }
   };
 
   const handleBlur = () => {
@@ -41,7 +45,7 @@ const NoteNode = ({ id, data, selected }: NodeProps) => {
       <NodeResizer 
         minWidth={160} 
         minHeight={60} 
-        isVisible={selected} 
+        isVisible={selected && !readOnly} 
         lineClassName="border-blue-500" 
         handleClassName="h-3 w-3 bg-white border border-blue-500 rounded"
       />
@@ -50,7 +54,7 @@ const NoteNode = ({ id, data, selected }: NodeProps) => {
         className={clsx(
           "h-full w-full bg-yellow-50 border transition-shadow duration-200 overflow-hidden flex flex-col",
           selected ? "border-blue-500 shadow-md ring-1 ring-blue-500" : "border-yellow-200 shadow-sm hover:shadow",
-          "rounded-sm" // Slightly simpler rounding for notes
+          "rounded-sm"
         )}
         onDoubleClick={handleDoubleClick}
       >
@@ -62,7 +66,6 @@ const NoteNode = ({ id, data, selected }: NodeProps) => {
             onChange={(e) => setContent(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={(e) => {
-              // Allow creating new lines, but stop propagation to prevent Flow hotkeys
               e.stopPropagation(); 
             }}
           />
@@ -71,7 +74,9 @@ const NoteNode = ({ id, data, selected }: NodeProps) => {
             {content ? (
               <ReactMarkdown>{content}</ReactMarkdown>
             ) : (
-              <span className="text-slate-400 italic">Double click to add a note...</span>
+              <span className="text-slate-400 italic">
+                {readOnly ? '' : 'Double click to add a note...'}
+              </span>
             )}
           </div>
         )}
