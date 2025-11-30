@@ -11,15 +11,15 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'L
   dagreGraph.setGraph({ 
     rankdir: direction,
     // Increase separation between nodes in the same rank (vertical in LR)
-    nodesep: 80, 
+    nodesep: 40, 
     // Increase separation between ranks (horizontal in LR) to prevent edge crowding
-    ranksep: 250 
+    ranksep: 80 
   });
 
   nodes.forEach((node) => {
-    // Pass dimensions closer to the actual CustomNode size (w-[220px])
-    // Height is variable but 100 is a safe average for calculation
-    dagreGraph.setNode(node.id, { width: 240, height: 120 });
+    // Pass dimensions closer to the actual CustomNode size (w-[180px])
+    // Height is variable but 60 is a safe average for calculation
+    dagreGraph.setNode(node.id, { width: 180, height: 60 });
   });
 
   edges.forEach((edge) => {
@@ -37,8 +37,8 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'L
       targetPosition: isHorizontal ? Position.Left : Position.Top,
       sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
       position: {
-        x: nodeWithPosition.x - 120, // half of width set above
-        y: nodeWithPosition.y - 60,  // half of height set above
+        x: nodeWithPosition.x - 90, // half of width set above
+        y: nodeWithPosition.y - 30,  // half of height set above
       },
     };
   });

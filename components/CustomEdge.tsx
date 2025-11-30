@@ -23,6 +23,7 @@ const CustomEdge = ({
     targetX,
     targetY,
     targetPosition,
+    borderRadius: 20, // Rounded corners for orthogonal lines
   });
 
   const [isEditing, setIsEditing] = useState(false);

@@ -14,7 +14,8 @@ import {
   ProOptions,
   NodeChange,
   EdgeChange,
-  DefaultEdgeOptions
+  DefaultEdgeOptions,
+  MarkerType
 } from '@xyflow/react';
 
 import { useNavigate, useParams } from 'react-router-dom';
@@ -48,8 +49,9 @@ const proOptions: ProOptions = { hideAttribution: true };
 // Make edges easier to interact with by increasing the hit area
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'smoothstep',
-  interactionWidth: 25, // Adds invisible padding around the edge for easier clicking
-  style: { strokeWidth: 2 } // Make visual line slightly thicker for better visibility
+  interactionWidth: 25, 
+  style: { stroke: '#94a3b8', strokeWidth: 1.5, strokeDasharray: '5 5' }, // Dashed neutral gray line
+  markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }, // Match arrow color
 };
 
 const EditorContent = () => {

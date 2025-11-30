@@ -39,34 +39,45 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
   return (
     <div className="relative group">
       <div className={clsx(
-        "w-[220px] bg-white rounded-lg border shadow-sm transition-all duration-200 relative z-10",
+        "w-[180px] bg-white rounded-lg border shadow-sm transition-all duration-200 relative z-10",
         selected ? "border-blue-500 shadow-md ring-1 ring-blue-500" : "border-slate-200 hover:border-blue-300"
       )}>
-        <Handle type="target" position={Position.Left} className="!bg-slate-400 !w-2 !h-2" />
+        {/* Target Handles (Input) */}
+        <Handle type="target" position={Position.Top} id="t-top" className="!bg-slate-400 !w-2 !h-2 !-top-1" />
+        <Handle type="target" position={Position.Right} id="t-right" className="!bg-slate-400 !w-2 !h-2 !-right-1" />
+        <Handle type="target" position={Position.Bottom} id="t-bottom" className="!bg-slate-400 !w-2 !h-2 !-bottom-1" />
+        <Handle type="target" position={Position.Left} id="t-left" className="!bg-slate-400 !w-2 !h-2 !-left-1" />
+
+        {/* Source Handles (Output) - Stacked on top or slightly offset if needed, but for "arbitrary" usually just having both available at same pos works if z-index is managed or if we rely on React Flow's smarts. 
+            Actually, putting them at the exact same spot can be tricky for selection. 
+            Let's keep them at standard positions. React Flow allows multiple handles. 
+            For "arbitrary", we usually want the user to be able to drag FROM any side and drop TO any side.
+        */}
+        <Handle type="source" position={Position.Top} id="s-top" className="!bg-blue-500 !w-2 !h-2 !-top-1 opacity-0 hover:opacity-100" />
+        <Handle type="source" position={Position.Right} id="s-right" className="!bg-blue-500 !w-2 !h-2 !-right-1 opacity-0 hover:opacity-100" />
+        <Handle type="source" position={Position.Bottom} id="s-bottom" className="!bg-blue-500 !w-2 !h-2 !-bottom-1 opacity-0 hover:opacity-100" />
+        <Handle type="source" position={Position.Left} id="s-left" className="!bg-blue-500 !w-2 !h-2 !-left-1 opacity-0 hover:opacity-100" />
         
         {/* Header / Main Body */}
-        <div className="p-3 flex items-start gap-3">
+        <div className="p-2 flex items-center gap-2">
           {/* Icon Container */}
-          <div className={clsx("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", colorClass)}>
-            <Icon size={20} />
+          <div className={clsx("w-8 h-8 rounded-md flex items-center justify-center shrink-0", colorClass)}>
+            <Icon size={16} />
           </div>
           
           {/* Content */}
-          <div className="flex-1 min-w-0 mr-5">
-            <h3 className="text-sm font-semibold text-slate-900 truncate">
+          <div className="flex-1 min-w-0 mr-4">
+            <h3 className="text-xs font-semibold text-slate-900 truncate">
               {(data.label as string) || nodeTypeConfig.label}
             </h3>
-            <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">
-              {(data.description as string) || nodeTypeConfig.description || "No description provided."}
-            </p>
           </div>
 
           {/* Note Toggle Icon (Top Right) */}
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-1 right-1">
             <button 
               onClick={toggleNote}
               className={clsx(
-                "p-1 rounded transition-colors",
+                "p-0.5 rounded transition-colors",
                 showNote 
                   ? "bg-yellow-100 text-yellow-600" 
                   : hasNote 
@@ -75,12 +86,10 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
               )}
               title={showNote ? "Hide Note" : "Show/Edit Note"}
             >
-              <StickyNote size={14} className={clsx(hasNote && !showNote && "fill-yellow-100")} />
+              <StickyNote size={12} className={clsx(hasNote && !showNote && "fill-yellow-100")} />
             </button>
           </div>
         </div>
-
-        <Handle type="source" position={Position.Right} className="!bg-blue-500 !w-2 !h-2" />
       </div>
 
       {/* Node Appendix (Attached Note) */}
