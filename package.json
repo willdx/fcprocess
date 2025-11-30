@@ -15,7 +15,8 @@
     "react": "^19.2.0",
     "lucide-react": "^0.555.0",
     "dagre": "^0.8.5",
-    "@xyflow/react": "^12.9.3"
+    "@xyflow/react": "^12.9.3",
+    "react-markdown": "9.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

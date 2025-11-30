@@ -13,16 +13,19 @@ import {
   useReactFlow,
   ProOptions,
   NodeChange,
-  EdgeChange
+  EdgeChange,
+  DefaultEdgeOptions
 } from '@xyflow/react';
 
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Save, 
-  MousePointer2, Eye, Box, Copy, Trash2, AlertTriangle
+  MousePointer2, Eye, Box, Copy, Trash2, AlertTriangle,
+  LayoutGrid, StickyNote
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import CustomNode from '../components/CustomNode';
+import NoteNode from '../components/NoteNode';
 import NodeConfigPanel from '../components/NodeConfigPanel';
 import CanvasControls from '../components/CanvasControls';
 import Toast from '../components/Toast';
@@ -32,9 +35,17 @@ import { workflowService } from '../services/workflowService';
 
 const nodeTypes = {
   custom: CustomNode,
+  note: NoteNode,
 };
 
 const proOptions: ProOptions = { hideAttribution: true };
+
+// Make edges easier to interact with by increasing the hit area
+const defaultEdgeOptions: DefaultEdgeOptions = {
+  type: 'smoothstep',
+  interactionWidth: 25, // Adds invisible padding around the edge for easier clicking
+  style: { strokeWidth: 2 } // Make visual line slightly thicker for better visibility
+};
 
 const EditorContent = () => {
   const navigate = useNavigate();
@@ -45,6 +56,7 @@ const EditorContent = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [workflowName, setWorkflowName] = useState('Loading...');
+  const [isLoading, setIsLoading] = useState(true);
   
   // History State
   const [history, setHistory] = useState<{nodes: Node[], edges: Edge[]}[]>([]);
@@ -78,6 +90,7 @@ const EditorContent = () => {
   useEffect(() => {
     const loadData = async () => {
       if (id) {
+        setIsLoading(true);
         // Reset loading state
         isLoadedRef.current = false;
         // Don't show dirty state while loading
@@ -97,6 +110,8 @@ const EditorContent = () => {
         setHistory([{ nodes: graph.nodes, edges: graph.edges }]);
         setHistoryIndex(0);
         
+        setIsLoading(false);
+        
         // Use a timeout to allow React Flow to handle initial dimensions 
         // before enabling dirty state tracking
         setTimeout(() => {
@@ -113,13 +128,10 @@ const EditorContent = () => {
     
     if (!isLoadedRef.current) return;
 
-    // Only set dirty if it's not just a selection change
     const isStructuralChange = changes.some(c => c.type !== 'select');
-    // Also ignore dimension changes that happen automatically
-    const isDimensionChangeOnly = changes.every(c => c.type === 'dimensions');
-
-    if (isStructuralChange && !isDimensionChangeOnly) {
-      setIsDirty(true);
+    
+    if (isStructuralChange) {
+       setIsDirty(true);
     }
   }, [onNodesChange]);
 
@@ -140,6 +152,23 @@ const EditorContent = () => {
     addToHistory(nodes, newEdges);
     setIsDirty(true);
   }, [edges, nodes, setNodes, setEdges]);
+
+  // Double click edge to add/edit label
+  const onEdgeDoubleClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.stopPropagation();
+    
+    // Direct prompt without timeout to ensure it triggers immediately on user action
+    const label = window.prompt('Enter edge label:', (edge.label as string) || '');
+    
+    if (label !== null) {
+      const newEdges = edges.map(e => 
+        e.id === edge.id ? { ...e, label } : e
+      );
+      setEdges(newEdges);
+      addToHistory(nodes, newEdges);
+      setIsDirty(true);
+    }
+  }, [edges, nodes, setEdges]);
 
   const addToHistory = (n: Node[], e: Edge[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -168,13 +197,18 @@ const EditorContent = () => {
       });
 
       const config = NODE_TYPES_LIST.find(t => t.type === type);
+      
+      const isNote = type === 'note';
+
       const newNode: Node = {
         id: `node_${Date.now()}`,
-        type: 'custom',
+        type: isNote ? 'note' : 'custom',
         position,
+        // Set default style dimensions for Note - SMALLER default size
+        style: isNote ? { width: 220, height: 80 } : undefined,
         data: { 
           type, 
-          label: config?.label || 'Node',
+          label: isNote ? '# New Note\nDouble click to edit' : (config?.label || 'Node'),
           description: config?.description || 'New Node'
         },
       };
@@ -199,11 +233,14 @@ const EditorContent = () => {
 
   const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
     event.preventDefault();
-    setMenu({
-      id: node.id,
-      top: event.clientY,
-      left: event.clientX,
-    });
+    // Only allow context menu for custom nodes (functional nodes), not standalone notes
+    if (node.type === 'custom') {
+      setMenu({
+        id: node.id,
+        top: event.clientY,
+        left: event.clientX,
+      });
+    }
   }, []);
 
   const handleLayout = useCallback(() => {
@@ -283,32 +320,41 @@ const EditorContent = () => {
   // Context Menu Actions
   const handleCopyNode = () => {
     if (!menu) return;
-    const nodeToCopy = nodes.find(n => n.id === menu.id);
-    if (nodeToCopy) {
-      const newNode = {
-        ...nodeToCopy,
-        id: `node_${Date.now()}`,
-        position: { x: nodeToCopy.position.x + 50, y: nodeToCopy.position.y + 50 },
-        selected: false
-      };
-      const newNodes = [...nodes, newNode];
-      setNodes(newNodes);
-      addToHistory(newNodes, edges);
-      setIsDirty(true);
-    }
+    const targetId = menu.id;
     setMenu(null);
+    
+    // Slight delay to allow UI to update
+    setTimeout(() => {
+      const nodeToCopy = nodes.find(n => n.id === targetId);
+      if (nodeToCopy) {
+        const newNode = {
+          ...nodeToCopy,
+          id: `node_${Date.now()}`,
+          position: { x: nodeToCopy.position.x + 50, y: nodeToCopy.position.y + 50 },
+          selected: false
+        };
+        const newNodes = [...nodes, newNode];
+        setNodes(newNodes);
+        addToHistory(newNodes, edges);
+        setIsDirty(true);
+      }
+    }, 10);
   };
 
   const handleDeleteNode = () => {
     if (!menu) return;
-    const newNodes = nodes.filter(n => n.id !== menu.id);
-    const newEdges = edges.filter(e => e.source !== menu.id && e.target !== menu.id);
-    setNodes(newNodes);
-    setEdges(newEdges);
-    addToHistory(newNodes, newEdges);
-    setIsDirty(true);
+    const targetId = menu.id;
     setMenu(null);
-    setSelectedNode(null);
+
+    setTimeout(() => {
+      const newNodes = nodes.filter(n => n.id !== targetId);
+      const newEdges = edges.filter(e => e.source !== targetId && e.target !== targetId);
+      setNodes(newNodes);
+      setEdges(newEdges);
+      addToHistory(newNodes, newEdges);
+      setIsDirty(true);
+      setSelectedNode(null);
+    }, 10);
   };
 
   return (
@@ -407,8 +453,10 @@ const EditorContent = () => {
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
             onNodeContextMenu={onNodeContextMenu}
+            onEdgeDoubleClick={onEdgeDoubleClick}
             nodeTypes={nodeTypes}
             proOptions={proOptions}
+            defaultEdgeOptions={defaultEdgeOptions}
             fitView
             snapToGrid
             className="bg-slate-50"
@@ -426,6 +474,25 @@ const EditorContent = () => {
             />
 
           </ReactFlow>
+          
+          {/* Empty State Overlay */}
+          {!isLoading && nodes.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+              <div className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl border-2 border-dashed border-slate-300 text-center max-w-md shadow-sm pointer-events-auto animate-in fade-in zoom-in-95 duration-300">
+                <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <LayoutGrid size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">Start Building Your Flow</h3>
+                <p className="text-slate-500 leading-relaxed text-sm mb-6">
+                  Drag and drop components from the left sidebar to create your architecture.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-amber-700 text-xs font-semibold bg-amber-50 py-2.5 px-4 rounded-lg border border-amber-100">
+                   <AlertTriangle size={14} className="shrink-0" /> 
+                   <span>Remember to save your changes often!</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Context Menu */}
           {menu && (
@@ -443,12 +510,14 @@ const EditorContent = () => {
           )}
         </div>
 
-        {/* Right Panel */}
-        <NodeConfigPanel 
-          selectedNode={selectedNode} 
-          onUpdate={handleUpdateNode} 
-          onClose={() => setSelectedNode(null)} 
-        />
+        {/* Right Panel - Conditional Render: Don't show for 'note' type */}
+        {selectedNode && selectedNode.type !== 'note' && (
+          <NodeConfigPanel 
+            selectedNode={selectedNode} 
+            onUpdate={handleUpdateNode} 
+            onClose={() => setSelectedNode(null)} 
+          />
+        )}
       </div>
     </div>
   );
