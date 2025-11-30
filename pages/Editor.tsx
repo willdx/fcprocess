@@ -19,7 +19,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Save, 
-  MousePointer2, Eye, Box, Copy, Trash2
+  MousePointer2, Eye, Box, Copy, Trash2, AlertTriangle
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import CustomNode from '../components/CustomNode';
@@ -55,10 +55,14 @@ const EditorContent = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [showToast, setShowToast] = useState(false);
   
+  // Navigation Guard State
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  
   // Ref to track if initial data load is complete to prevent false dirty state
   const isLoadedRef = useRef(false);
 
-  // Handle Window Close/Refresh with unsaved changes
+  // Handle Window Close/Refresh with unsaved changes (Browser level)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
@@ -76,6 +80,8 @@ const EditorContent = () => {
       if (id) {
         // Reset loading state
         isLoadedRef.current = false;
+        // Don't show dirty state while loading
+        setIsDirty(false);
 
         // Load metadata
         const wf = await workflowService.getWorkflowById(id);
@@ -91,12 +97,11 @@ const EditorContent = () => {
         setHistory([{ nodes: graph.nodes, edges: graph.edges }]);
         setHistoryIndex(0);
         
-        // Use a small timeout to allow React Flow to handle initial dimensions 
+        // Use a timeout to allow React Flow to handle initial dimensions 
         // before enabling dirty state tracking
         setTimeout(() => {
-          setIsDirty(false);
           isLoadedRef.current = true;
-        }, 200);
+        }, 500);
       }
     };
     loadData();
@@ -134,7 +139,7 @@ const EditorContent = () => {
     setEdges(newEdges);
     addToHistory(nodes, newEdges);
     setIsDirty(true);
-  }, [edges, nodes, setEdges]);
+  }, [edges, nodes, setNodes, setEdges]);
 
   const addToHistory = (n: Node[], e: Edge[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -179,7 +184,7 @@ const EditorContent = () => {
       addToHistory(newNodes, edges);
       setIsDirty(true);
     },
-    [reactFlowInstance, nodes, edges, setNodes]
+    [reactFlowInstance, nodes, edges, setNodes, setEdges]
   );
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -253,15 +258,26 @@ const EditorContent = () => {
     }
   };
 
-  // Safe Navigation Wrapper
+  // Safe Navigation with Custom Modal
   const handleNavigation = (path: string) => {
     if (isDirty) {
-      if (window.confirm("You have unsaved changes. Are you sure you want to leave?")) {
-        navigate(path);
-      }
+      setPendingPath(path);
+      setShowExitDialog(true);
     } else {
       navigate(path);
     }
+  };
+
+  const confirmExit = () => {
+    setShowExitDialog(false);
+    if (pendingPath) {
+      navigate(pendingPath);
+    }
+  };
+
+  const cancelExit = () => {
+    setShowExitDialog(false);
+    setPendingPath(null);
   };
 
   // Context Menu Actions
@@ -303,10 +319,41 @@ const EditorContent = () => {
         onClose={() => setShowToast(false)} 
       />
 
+      {/* Exit Confirmation Dialog */}
+      {showExitDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="text-amber-600" size={20} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Unsaved Changes</h3>
+            </div>
+            <p className="text-slate-600 mb-6 text-sm leading-relaxed">
+              You have unsaved changes in your workflow. If you leave now, your changes will be lost.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={cancelExit}
+                className="px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmExit}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
+              >
+                Leave without saving
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-20 shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={() => handleNavigation('/dashboard')} className="p-2 hover:bg-slate-100 rounded-md text-slate-500">
+          <button onClick={() => handleNavigation('/dashboard')} className="p-2 hover:bg-slate-100 rounded-md text-slate-500 transition-colors">
             <ArrowLeft size={20} />
           </button>
           <div className="flex flex-col">
