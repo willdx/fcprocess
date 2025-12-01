@@ -7,7 +7,9 @@ import {
   useEdgesState, 
   Node,
   ProOptions,
-  useReactFlow
+  useReactFlow,
+  DefaultEdgeOptions,
+  MarkerType
 } from '@xyflow/react';
 
 import { useNavigate, useParams } from 'react-router-dom';
@@ -31,6 +33,13 @@ const edgeTypes = {
 };
 
 const proOptions: ProOptions = { hideAttribution: true };
+
+const defaultEdgeOptions: DefaultEdgeOptions = {
+  type: 'smoothstep',
+  interactionWidth: 25, 
+  style: { stroke: '#94a3b8', strokeWidth: 1.5, strokeDasharray: '5 5' }, // Dashed neutral gray line
+  markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }, // Match arrow color
+};
 
 const ViewerContent = () => {
   const navigate = useNavigate();
@@ -181,6 +190,7 @@ const ViewerContent = () => {
               // Prevent connections in Read mode
               nodesConnectable={false}
               proOptions={proOptions}
+              defaultEdgeOptions={defaultEdgeOptions}
               fitView
               className="bg-slate-50"
             >
