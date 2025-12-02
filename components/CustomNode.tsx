@@ -36,6 +36,12 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
 
   const hasNote = !!attachedNote && attachedNote.trim().length > 0;
 
+  const handleVisibilityClass = readOnly 
+    ? "opacity-0 pointer-events-none" 
+    : "opacity-0 group-hover:opacity-100";
+  
+  const commonHandleClass = `!w-2 !h-2 transition-opacity duration-200 ${handleVisibilityClass}`;
+
   return (
     <div className="relative group">
       <div className={clsx(
@@ -43,20 +49,16 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
         selected ? "border-blue-500 shadow-md ring-1 ring-blue-500" : "border-slate-200 hover:border-blue-300"
       )}>
         {/* Target Handles (Input) */}
-        <Handle type="target" position={Position.Top} id="t-top" className="!bg-slate-400 !w-2 !h-2 !-top-1" />
-        <Handle type="target" position={Position.Right} id="t-right" className="!bg-slate-400 !w-2 !h-2 !-right-1" />
-        <Handle type="target" position={Position.Bottom} id="t-bottom" className="!bg-slate-400 !w-2 !h-2 !-bottom-1" />
-        <Handle type="target" position={Position.Left} id="t-left" className="!bg-slate-400 !w-2 !h-2 !-left-1" />
+        <Handle type="target" position={Position.Top} id="t-top" className={clsx("!bg-slate-400 !-top-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Right} id="t-right" className={clsx("!bg-slate-400 !-right-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Bottom} id="t-bottom" className={clsx("!bg-slate-400 !-bottom-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Left} id="t-left" className={clsx("!bg-slate-400 !-left-1", commonHandleClass)} />
 
-        {/* Source Handles (Output) - Stacked on top or slightly offset if needed, but for "arbitrary" usually just having both available at same pos works if z-index is managed or if we rely on React Flow's smarts. 
-            Actually, putting them at the exact same spot can be tricky for selection. 
-            Let's keep them at standard positions. React Flow allows multiple handles. 
-            For "arbitrary", we usually want the user to be able to drag FROM any side and drop TO any side.
-        */}
-        <Handle type="source" position={Position.Top} id="s-top" className="!bg-blue-500 !w-2 !h-2 !-top-1 opacity-0 hover:opacity-100" />
-        <Handle type="source" position={Position.Right} id="s-right" className="!bg-blue-500 !w-2 !h-2 !-right-1 opacity-0 hover:opacity-100" />
-        <Handle type="source" position={Position.Bottom} id="s-bottom" className="!bg-blue-500 !w-2 !h-2 !-bottom-1 opacity-0 hover:opacity-100" />
-        <Handle type="source" position={Position.Left} id="s-left" className="!bg-blue-500 !w-2 !h-2 !-left-1 opacity-0 hover:opacity-100" />
+        {/* Source Handles (Output) */}
+        <Handle type="source" position={Position.Top} id="s-top" className={clsx("!bg-blue-500 !-top-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Right} id="s-right" className={clsx("!bg-blue-500 !-right-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Bottom} id="s-bottom" className={clsx("!bg-blue-500 !-bottom-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Left} id="s-left" className={clsx("!bg-blue-500 !-left-1", commonHandleClass)} />
         
         {/* Header / Main Body */}
         <div className="p-2 flex items-center gap-2">
