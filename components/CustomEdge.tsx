@@ -1,5 +1,13 @@
 import React, { useState, useCallback, useRef, useEffect, memo } from 'react';
-import { BaseEdge, EdgeLabelRenderer, EdgeProps, getSmoothStepPath, useReactFlow } from '@xyflow/react';
+import { 
+  BaseEdge, 
+  EdgeLabelRenderer, 
+  EdgeProps, 
+  useReactFlow,
+  getSmoothStepPath,
+  getBezierPath,
+  getStraightPath
+} from '@xyflow/react';
 
 const CustomEdge = ({
   id,
@@ -16,15 +24,33 @@ const CustomEdge = ({
   data = {},
 }: EdgeProps) => {
   const { setEdges, getZoom } = useReactFlow();
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 20, // Rounded corners for orthogonal lines
-  });
+
+  const pathType = data?.pathType || 'smoothstep';
+
+  const getPath = () => {
+    const params = {
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+    };
+
+    switch (pathType) {
+      case 'bezier':
+        return getBezierPath(params);
+      case 'straight':
+        return getStraightPath(params);
+      case 'step':
+        return getSmoothStepPath({ ...params, borderRadius: 0 });
+      case 'smoothstep':
+      default:
+        return getSmoothStepPath({ ...params, borderRadius: 20 });
+    }
+  };
+
+  const [edgePath, labelX, labelY] = getPath();
 
   const [isEditing, setIsEditing] = useState(false);
   const [labelText, setLabelText] = useState((label as string) || '');

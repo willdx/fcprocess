@@ -62,6 +62,7 @@ const EditorContent = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [workflowName, setWorkflowName] = useState('Loading...');
   const [isLoading, setIsLoading] = useState(true);
   
@@ -213,11 +214,19 @@ const EditorContent = () => {
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
+    setSelectedEdge(null);
+    setMenu(null);
+  }, []);
+
+  const onEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
+    setSelectedEdge(edge);
+    setSelectedNode(null);
     setMenu(null);
   }, []);
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
+    setSelectedEdge(null);
     setMenu(null);
   }, []);
 
@@ -254,6 +263,30 @@ const EditorContent = () => {
     const newNodes = nodes.map(n => n.id === id ? { ...n, data } : n);
     setNodes(newNodes);
     addToHistory(newNodes, edges);
+    setIsDirty(true);
+  };
+
+  const handleEdgeUpdate = (edgeId: string, updates: any) => {
+    const newEdges = edges.map(e => {
+      if (e.id === edgeId) {
+        // Merge updates into the edge object
+        // updates can be { data: ... }, { style: ... }, { animated: ... }
+        const updatedEdge = { ...e, ...updates };
+        // If data is being updated, merge it deeply
+        if (updates.data) {
+          updatedEdge.data = { ...e.data, ...updates.data };
+        }
+        // If style is being updated, merge it deeply
+        if (updates.style) {
+          updatedEdge.style = { ...e.style, ...updates.style };
+        }
+        setSelectedEdge(updatedEdge); // Update selection state
+        return updatedEdge;
+      }
+      return e;
+    });
+    setEdges(newEdges);
+    addToHistory(nodes, newEdges);
     setIsDirty(true);
   };
 
@@ -441,6 +474,7 @@ const EditorContent = () => {
             onEdgesChange={handleEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
+            onEdgeClick={onEdgeClick}
             onPaneClick={onPaneClick}
             onNodeContextMenu={onNodeContextMenu}
             nodeTypes={nodeTypes}
@@ -461,6 +495,8 @@ const EditorContent = () => {
               canUndo={historyIndex > 0}
               canRedo={historyIndex < history.length - 1}
               showHistory={true}
+              selectedEdge={selectedEdge}
+              onEdgeUpdate={handleEdgeUpdate}
             />
 
           </ReactFlow>

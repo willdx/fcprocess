@@ -1,6 +1,11 @@
 import React from 'react';
 import { Panel } from '@xyflow/react';
-import { RotateCcw, RotateCw, Maximize, Layout } from 'lucide-react';
+import { 
+  RotateCcw, RotateCw, Maximize, Layout, 
+  Spline, Minus, CornerDownRight, Waypoints,
+  MoreHorizontal, Play, Pause
+} from 'lucide-react';
+import { Edge } from '@xyflow/react';
 
 interface CanvasControlsProps {
   onFitView: () => void;
@@ -10,14 +15,18 @@ interface CanvasControlsProps {
   canUndo?: boolean;
   canRedo?: boolean;
   showHistory?: boolean;
+  selectedEdge?: Edge | null;
+  onEdgeUpdate?: (edgeId: string, data: any) => void;
 }
 
-const ControlButton = ({ onClick, disabled, icon: Icon, label }: any) => (
+const ControlButton = ({ onClick, disabled, icon: Icon, label, active }: any) => (
   <div className="relative group">
     <button
       onClick={onClick}
       disabled={disabled}
-      className="p-2 hover:bg-slate-100 text-slate-600 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      className={`p-2 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+        ${active ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-slate-600'}
+      `}
       aria-label={label}
     >
       <Icon size={18} />
@@ -37,10 +46,84 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
   onRedo,
   canUndo,
   canRedo,
-  showHistory = true
+  showHistory = true,
+  selectedEdge,
+  onEdgeUpdate
 }) => {
+  const handleStyleChange = (key: string, value: any) => {
+    if (selectedEdge && onEdgeUpdate) {
+      if (key === 'animated') {
+        onEdgeUpdate(selectedEdge.id, { animated: value });
+      } else if (key === 'style') {
+        onEdgeUpdate(selectedEdge.id, { style: { ...selectedEdge.style, ...value } });
+      } else {
+        onEdgeUpdate(selectedEdge.id, { data: { ...selectedEdge.data, [key]: value } });
+      }
+    }
+  };
+
+  const currentPathType = selectedEdge?.data?.pathType || 'smoothstep';
+  const isDashed = selectedEdge?.style?.strokeDasharray === '5 5';
+  const isDotted = selectedEdge?.style?.strokeDasharray === '2 2';
+  const isSolid = !selectedEdge?.style?.strokeDasharray;
+
   return (
-    <Panel position="bottom-center" className="mb-8">
+    <Panel position="bottom-center" className="mb-8 flex flex-col gap-2 items-center">
+      {selectedEdge && (
+        <div className="bg-white p-1 rounded-lg shadow-lg border border-slate-200 flex items-center gap-1 animate-in slide-in-from-bottom-2 fade-in duration-200">
+          {/* Path Type Controls */}
+          <ControlButton 
+            onClick={() => handleStyleChange('pathType', 'bezier')} 
+            active={currentPathType === 'bezier'}
+            icon={Spline} 
+            label="Bezier Curve" 
+          />
+          <ControlButton 
+            onClick={() => handleStyleChange('pathType', 'straight')} 
+            active={currentPathType === 'straight'}
+            icon={Minus} 
+            label="Straight Line" 
+          />
+          <ControlButton 
+            onClick={() => handleStyleChange('pathType', 'step')} 
+            active={currentPathType === 'step'}
+            icon={CornerDownRight} 
+            label="Step Line" 
+          />
+          <ControlButton 
+            onClick={() => handleStyleChange('pathType', 'smoothstep')} 
+            active={currentPathType === 'smoothstep'}
+            icon={Waypoints} 
+            label="Smooth Step" 
+          />
+          
+          <div className="w-px h-6 bg-slate-200 mx-1" />
+          
+          {/* Stroke Style Controls */}
+          <ControlButton 
+            onClick={() => handleStyleChange('style', { strokeDasharray: undefined })} 
+            active={isSolid}
+            icon={(props: any) => <Minus {...props} strokeWidth={3} />} 
+            label="Solid Line" 
+          />
+          <ControlButton 
+            onClick={() => handleStyleChange('style', { strokeDasharray: '5 5' })} 
+            active={isDashed}
+            icon={MoreHorizontal} 
+            label="Dashed Line" 
+          />
+          
+          <div className="w-px h-6 bg-slate-200 mx-1" />
+
+          {/* Animation Control */}
+          <ControlButton 
+            onClick={() => handleStyleChange('animated', !selectedEdge.animated)} 
+            active={selectedEdge.animated}
+            icon={selectedEdge.animated ? Pause : Play} 
+            label={selectedEdge.animated ? "Stop Animation" : "Animate Edge"} 
+          />
+        </div>
+      )}
       <div className="bg-white p-1 rounded-lg shadow-lg border border-slate-200 flex items-center gap-1">
         {showHistory && (
           <>
