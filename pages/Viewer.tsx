@@ -34,11 +34,12 @@ const edgeTypes = {
 
 const proOptions: ProOptions = { hideAttribution: true };
 
-const defaultEdgeOptions: DefaultEdgeOptions = {
+// Initial default edge options (will be overridden by loaded data)
+const initialDefaultEdgeOptions: DefaultEdgeOptions = {
   type: 'smoothstep',
   interactionWidth: 25, 
-  style: { stroke: '#94a3b8', strokeWidth: 1.5, strokeDasharray: '5 5' }, // Dashed neutral gray line
-  markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }, // Match arrow color
+  style: { stroke: '#94a3b8', strokeWidth: 1.5, strokeDasharray: '5 5' },
+  markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
 };
 
 const ViewerContent = () => {
@@ -49,6 +50,7 @@ const ViewerContent = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [workflowName, setWorkflowName] = useState('Loading...');
+  const [defaultEdgeOptions, setDefaultEdgeOptions] = useState<DefaultEdgeOptions>(initialDefaultEdgeOptions);
   
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(true);
@@ -72,19 +74,14 @@ const ViewerContent = () => {
         // Load graph
         const graph = await workflowService.getWorkflowGraph(id);
         
-        // Inject readOnly: true into nodes and edges
-        const readOnlyNodes = graph.nodes.map(n => ({
-          ...n,
-          data: { ...n.data, readOnly: true }
-        }));
+        // Load nodes and edges directly (same as Editor)
+        setNodes(graph.nodes);
+        setEdges(graph.edges);
         
-        const readOnlyEdges = graph.edges.map(e => ({
-          ...e,
-          data: { ...e.data, readOnly: true }
-        }));
-
-        setNodes(readOnlyNodes);
-        setEdges(readOnlyEdges);
+        // Load defaultEdgeOptions if saved
+        if (graph.defaultEdgeOptions) {
+          setDefaultEdgeOptions(graph.defaultEdgeOptions);
+        }
       }
     };
     loadData();
