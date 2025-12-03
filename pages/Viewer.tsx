@@ -156,20 +156,16 @@ const ViewerContent = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
-           <button 
-             onClick={() => navigate(`/editor/${id}`)}
-             className="flex items-center gap-2 px-3 py-1.5 text-slate-500 hover:text-slate-800 rounded-md text-xs font-semibold transition-colors"
-           >
-              <MousePointer2 size={14} />
-              Editor
-           </button>
-           <button className="flex items-center gap-2 px-3 py-1.5 bg-white text-blue-600 shadow-sm rounded-md text-xs font-semibold">
-              <Eye size={14} />
-              Read
-           </button>
+        <div className="flex items-center gap-2">
+           {/* Edit Mode Toggle */}
+           <button
+            onClick={() => navigate(`/editor/${id}`)}
+            className="p-2 hover:bg-slate-100 rounded-md text-slate-600 transition-colors flex items-center gap-2 text-sm font-medium"
+            title="Switch to Editor Mode"
+          >
+            <MousePointer2 size={18} />
+          </button>
         </div>
-        <div className="w-10" /> {/* Spacer */}
       </header>
 
       {/* Main Area */}

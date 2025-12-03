@@ -69,61 +69,7 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
 
   return (
     <Panel position="bottom-center" className="mb-8 flex flex-col gap-2 items-center">
-      {selectedEdge && (
-        <div className="bg-white p-1 rounded-lg shadow-lg border border-slate-200 flex items-center gap-1 animate-in slide-in-from-bottom-2 fade-in duration-200">
-          {/* Path Type Controls */}
-          <ControlButton 
-            onClick={() => handleStyleChange('pathType', 'bezier')} 
-            active={currentPathType === 'bezier'}
-            icon={Spline} 
-            label="Bezier Curve" 
-          />
-          <ControlButton 
-            onClick={() => handleStyleChange('pathType', 'straight')} 
-            active={currentPathType === 'straight'}
-            icon={Minus} 
-            label="Straight Line" 
-          />
-          <ControlButton 
-            onClick={() => handleStyleChange('pathType', 'step')} 
-            active={currentPathType === 'step'}
-            icon={CornerDownRight} 
-            label="Step Line" 
-          />
-          <ControlButton 
-            onClick={() => handleStyleChange('pathType', 'smoothstep')} 
-            active={currentPathType === 'smoothstep'}
-            icon={Waypoints} 
-            label="Smooth Step" 
-          />
-          
-          <div className="w-px h-6 bg-slate-200 mx-1" />
-          
-          {/* Stroke Style Controls */}
-          <ControlButton 
-            onClick={() => handleStyleChange('style', { strokeDasharray: undefined })} 
-            active={isSolid}
-            icon={(props: any) => <Minus {...props} strokeWidth={3} />} 
-            label="Solid Line" 
-          />
-          <ControlButton 
-            onClick={() => handleStyleChange('style', { strokeDasharray: '5 5' })} 
-            active={isDashed}
-            icon={MoreHorizontal} 
-            label="Dashed Line" 
-          />
-          
-          <div className="w-px h-6 bg-slate-200 mx-1" />
-
-          {/* Animation Control */}
-          <ControlButton 
-            onClick={() => handleStyleChange('animated', !selectedEdge.animated)} 
-            active={selectedEdge.animated}
-            icon={selectedEdge.animated ? Pause : Play} 
-            label={selectedEdge.animated ? "Stop Animation" : "Animate Edge"} 
-          />
-        </div>
-      )}
+      {/* Edge controls removed as they are now in the right panel */}
       <div className="bg-white p-1 rounded-lg shadow-lg border border-slate-200 flex items-center gap-1">
         {showHistory && (
           <>
@@ -148,12 +94,6 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
           disabled={false} 
           icon={Maximize} 
           label="Fit View" 
-        />
-        <ControlButton 
-          onClick={onLayout} 
-          disabled={false} 
-          icon={Layout} 
-          label="Re-layout" 
         />
       </div>
     </Panel>

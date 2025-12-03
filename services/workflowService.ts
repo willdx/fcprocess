@@ -1,5 +1,5 @@
 import { MOCK_WORKFLOWS } from '../constants';
-import { Node, Edge } from '@xyflow/react';
+import { Node, Edge, DefaultEdgeOptions } from '@xyflow/react';
 
 // Default mock nodes for the "E-Commerce Order System" (wf-1) or new flows to start with something
 const DEFAULT_NODES: Node[] = [
@@ -46,7 +46,7 @@ let workflows: any[] = [
 ];
 
 // In-memory storage for graph data (nodes and edges) keyed by workflow ID
-const workflowGraphs: Record<string, { nodes: Node[], edges: Edge[] }> = {
+const workflowGraphs: Record<string, { nodes: Node[], edges: Edge[], defaultEdgeOptions?: DefaultEdgeOptions }> = {
   'wf-1': { nodes: DEFAULT_NODES, edges: DEFAULT_EDGES },
   'wf-2': {
     nodes: [
@@ -186,7 +186,7 @@ export const workflowService = {
   /**
    * Get graph data (nodes and edges) for a workflow
    */
-  getWorkflowGraph: async (id: string): Promise<{ nodes: Node[], edges: Edge[] }> => {
+  getWorkflowGraph: async (id: string): Promise<{ nodes: Node[], edges: Edge[], defaultEdgeOptions?: DefaultEdgeOptions }> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         // Return stored graph or default if specific ID not found (fallback for demo)
@@ -200,10 +200,10 @@ export const workflowService = {
   /**
    * Save graph data for a workflow
    */
-  saveWorkflowGraph: async (id: string, nodes: Node[], edges: Edge[]): Promise<void> => {
+  saveWorkflowGraph: async (id: string, nodes: Node[], edges: Edge[], defaultEdgeOptions?: DefaultEdgeOptions): Promise<void> => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        workflowGraphs[id] = { nodes, edges };
+        workflowGraphs[id] = { nodes, edges, defaultEdgeOptions };
         resolve();
       }, 300);
     });

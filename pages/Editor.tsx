@@ -22,13 +22,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Save, 
   MousePointer2, Eye, Box, Copy, Trash2, AlertTriangle,
-  LayoutGrid
+  LayoutGrid, Settings, Sliders
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import CustomNode from '../components/CustomNode';
 import NoteNode from '../components/NoteNode';
 import CustomEdge from '../components/CustomEdge';
 import NodeConfigPanel from '../components/NodeConfigPanel';
+import EdgeConfigPanel from '../components/EdgeConfigPanel';
+import GlobalStylePanel from '../components/GlobalStylePanel';
 import CanvasControls from '../components/CanvasControls';
 import Toast from '../components/Toast';
 import { getLayoutedElements } from '../utils/layoutUtils';
@@ -47,11 +49,14 @@ const edgeTypes = {
 const proOptions: ProOptions = { hideAttribution: true };
 
 // Make edges easier to interact with by increasing the hit area
-const defaultEdgeOptions: DefaultEdgeOptions = {
+// Make edges easier to interact with by increasing the hit area
+const initialDefaultEdgeOptions: DefaultEdgeOptions = {
   type: 'smoothstep',
   interactionWidth: 25, 
   style: { stroke: '#94a3b8', strokeWidth: 1.5, strokeDasharray: '5 5' }, // Dashed neutral gray line
   markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }, // Match arrow color
+  animated: false,
+  data: { pathType: 'smoothstep' }
 };
 
 const EditorContent = () => {
@@ -61,8 +66,10 @@ const EditorContent = () => {
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [defaultEdgeOptions, setDefaultEdgeOptions] = useState<DefaultEdgeOptions>(initialDefaultEdgeOptions);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
+  const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [workflowName, setWorkflowName] = useState('Loading...');
   const [isLoading, setIsLoading] = useState(true);
   
@@ -113,6 +120,9 @@ const EditorContent = () => {
         const graph = await workflowService.getWorkflowGraph(id);
         setNodes(graph.nodes);
         setEdges(graph.edges);
+        if (graph.defaultEdgeOptions) {
+          setDefaultEdgeOptions(graph.defaultEdgeOptions);
+        }
         
         // Init history
         setHistory([{ nodes: graph.nodes, edges: graph.edges }]);
@@ -155,7 +165,14 @@ const EditorContent = () => {
   }, [onEdgesChange]);
 
   const onConnect = useCallback((params: Connection) => {
-    const newEdges = addEdge({ ...params, animated: true, type: 'smoothstep' }, edges);
+    const newEdges = addEdge({ 
+      ...params, 
+      animated: defaultEdgeOptions.animated, 
+      type: 'smoothstep', // Always use custom edge component
+      style: defaultEdgeOptions.style,
+      markerEnd: defaultEdgeOptions.markerEnd,
+      data: { ...defaultEdgeOptions.data }
+    }, edges);
     setEdges(newEdges);
     addToHistory(nodes, newEdges);
     setIsDirty(true);
@@ -215,18 +232,21 @@ const EditorContent = () => {
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
     setSelectedEdge(null);
+    setShowGlobalSettings(false);
     setMenu(null);
   }, []);
 
   const onEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
     setSelectedEdge(edge);
     setSelectedNode(null);
+    setShowGlobalSettings(false);
     setMenu(null);
   }, []);
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
     setSelectedEdge(null);
+    // Don't close global settings on pane click, user might want to keep it open
     setMenu(null);
   }, []);
 
@@ -312,10 +332,24 @@ const EditorContent = () => {
 
   const handleSave = async () => {
     if (id) {
-      await workflowService.saveWorkflowGraph(id, nodes, edges);
+      await workflowService.saveWorkflowGraph(id, nodes, edges, defaultEdgeOptions);
       setIsDirty(false);
       setShowToast(true);
     }
+  };
+
+  const handleApplyGlobalToAll = () => {
+    const newEdges = edges.map(e => ({
+      ...e,
+      style: { ...e.style, ...defaultEdgeOptions.style },
+      markerEnd: defaultEdgeOptions.markerEnd,
+      animated: defaultEdgeOptions.animated,
+      data: { ...e.data, ...defaultEdgeOptions.data }
+    }));
+    setEdges(newEdges);
+    addToHistory(nodes, newEdges);
+    setIsDirty(true);
+    setShowToast(true); // Reuse toast to show success
   };
 
   // Safe Navigation with Custom Modal
@@ -380,6 +414,13 @@ const EditorContent = () => {
     }, 10);
   };
 
+  const reactFlowWrapper = useRef(null);
+
+  const handleUpdateDefaultEdgeOptions = (newOptions: DefaultEdgeOptions) => {
+    setDefaultEdgeOptions(newOptions);
+    setIsDirty(true);
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <Toast 
@@ -430,121 +471,152 @@ const EditorContent = () => {
               <Box size={16} className="text-blue-600" />
               <span className="font-semibold text-slate-900 text-sm">{workflowName}</span>
             </div>
+            <span className="text-xs text-slate-400">
+              {isDirty ? 'Unsaved changes' : 'All changes saved'}
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
-           <button className="flex items-center gap-2 px-3 py-1.5 bg-white text-blue-600 shadow-sm rounded-md text-xs font-semibold">
-              <MousePointer2 size={14} />
-              Editor
-           </button>
-           <button 
-             onClick={() => handleNavigation(`/viewer/${id}`)}
-             className="flex items-center gap-2 px-3 py-1.5 text-slate-500 hover:text-slate-800 rounded-md text-xs font-semibold transition-colors"
-           >
-              <Eye size={14} />
-              Read
-           </button>
-        </div>
-
         <div className="flex items-center gap-2">
-          <button 
-            onClick={handleSave} 
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-              isDirty 
-                ? "bg-amber-500 hover:bg-amber-600 text-white shadow-md ring-2 ring-amber-200" 
-                : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}
+           {/* View Mode Toggle */}
+           <button
+            onClick={() => handleNavigation(`/viewer/${id}`)}
+            className="p-2 hover:bg-slate-100 rounded-md text-slate-600 transition-colors flex items-center gap-2 text-sm font-medium"
+            title="Switch to Reader Mode"
+          >
+            <Eye size={18} />
+          </button>
+
+           {/* Global Settings Toggle */}
+           <button
+            onClick={() => setShowGlobalSettings(!showGlobalSettings)}
+            className={`p-2 rounded-md transition-colors flex items-center gap-2 text-sm font-medium
+              ${showGlobalSettings ? 'bg-blue-50 text-blue-600' : 'hover:bg-slate-100 text-slate-600'}
+            `}
+            title="Global Settings"
+          >
+            <Settings size={18} />
+          </button>
+
+          <div className="h-6 w-px bg-slate-200 mx-2" />
+
+          <button
+            onClick={handleSave}
+            disabled={!isDirty}
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all
+              ${isDirty 
+                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow' 
+                : 'bg-slate-100 text-slate-400 cursor-not-allowed'}
+            `}
           >
             <Save size={16} />
-            {isDirty ? "Save Changes" : "Save"}
+            Save
           </button>
         </div>
       </header>
 
-      {/* Main Area */}
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden">
         <Sidebar />
         
-        <div className="flex-1 h-full relative" onDragOver={onDragOver} onDrop={onDrop}>
+        <div className="flex-1 relative" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={handleNodesChange}
-            onEdgesChange={handleEdgesChange}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             onPaneClick={onPaneClick}
             onNodeContextMenu={onNodeContextMenu}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
-            proOptions={proOptions}
             defaultEdgeOptions={defaultEdgeOptions}
+            proOptions={proOptions}
             fitView
-            snapToGrid
             className="bg-slate-50"
           >
-            <Background color="#cbd5e1" variant={BackgroundVariant.Dots} />
+            <Background color="#e2e8f0" variant={BackgroundVariant.Dots} />
             
             <CanvasControls 
+              onFitView={() => reactFlowInstance?.fitView({ duration: 800 })}
+              onLayout={handleLayout}
               onUndo={handleUndo}
               onRedo={handleRedo}
-              onFitView={handleFitView}
-              onLayout={handleLayout}
               canUndo={historyIndex > 0}
               canRedo={historyIndex < history.length - 1}
               showHistory={true}
               selectedEdge={selectedEdge}
               onEdgeUpdate={handleEdgeUpdate}
             />
-
           </ReactFlow>
-          
-          {/* Empty State Overlay */}
-          {!isLoading && nodes.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-              <div className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl border-2 border-dashed border-slate-300 text-center max-w-md shadow-sm pointer-events-auto animate-in fade-in zoom-in-95 duration-300">
-                <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <LayoutGrid size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">Start Building Your Flow</h3>
-                <p className="text-slate-500 leading-relaxed text-sm mb-6">
-                  Drag and drop components from the left sidebar to create your architecture.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-amber-700 text-xs font-semibold bg-amber-50 py-2.5 px-4 rounded-lg border border-amber-100">
-                   <AlertTriangle size={14} className="shrink-0" /> 
-                   <span>Remember to save your changes often!</span>
-                </div>
-              </div>
-            </div>
-          )}
 
+          {/* Right Side Panels */}
+          {selectedNode && (
+            <NodeConfigPanel 
+              selectedNode={selectedNode} 
+              onUpdate={handleUpdateNode}
+              onClose={() => setSelectedNode(null)}
+            />
+          )}
+          
           {/* Context Menu */}
           {menu && (
             <div 
-              className="fixed bg-white shadow-xl border border-slate-200 rounded-lg py-1 z-50 w-32"
-              style={{ top: menu.top, left: menu.left }}
+              style={{ top: menu.top, left: menu.left }} 
+              className="absolute z-50 bg-white rounded-lg shadow-xl border border-slate-100 py-1 min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
             >
-              <button onClick={handleCopyNode} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2">
-                <Copy size={14} /> Copy
+              <button 
+                onClick={handleCopyNode}
+                className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+              >
+                <Copy size={14} />
+                Duplicate
               </button>
-              <button onClick={handleDeleteNode} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
-                <Trash2 size={14} /> Delete
+              <button 
+                onClick={handleDeleteNode}
+                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+              >
+                <Trash2 size={14} />
+                Delete
               </button>
             </div>
           )}
         </div>
+      </div>
 
-        {/* Right Panel - Conditional Render: Don't show for 'note' type */}
-        {selectedNode && selectedNode.type !== 'note' && (
-          <NodeConfigPanel 
-            selectedNode={selectedNode} 
-            onUpdate={handleUpdateNode} 
-            onClose={() => setSelectedNode(null)} 
+      {/* Toast Notification */}
+      {showToast && (
+        <Toast 
+          message="Workflow saved successfully" 
+          isVisible={showToast}
+          onClose={() => setShowToast(false)} 
+        />
+      )}
+
+
+
+        {/* Edge Config Panel */}
+        {selectedEdge && (
+          <EdgeConfigPanel
+            selectedEdge={selectedEdge}
+            onUpdate={handleEdgeUpdate}
+            onClose={() => setSelectedEdge(null)}
           />
         )}
-      </div>
+
+        {/* Global Style Panel */}
+        {showGlobalSettings && (
+          <GlobalStylePanel
+            defaultOptions={defaultEdgeOptions}
+            onUpdateDefault={handleUpdateDefaultEdgeOptions}
+            onApplyToAll={handleApplyGlobalToAll}
+            onClose={() => setShowGlobalSettings(false)}
+          />
+        )}
     </div>
   );
 };

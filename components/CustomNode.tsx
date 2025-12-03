@@ -7,9 +7,28 @@ import { StickyNote } from 'lucide-react';
 const CustomNode = ({ id, data, selected }: NodeProps) => {
   const { updateNodeData } = useReactFlow();
   const nodeTypeConfig = NODE_TYPES_LIST.find(t => t.type === data.type) || NODE_TYPES_LIST[0];
-  const Icon = ICON_MAP[nodeTypeConfig.iconName] || ICON_MAP['Server'];
-  const colorClass = CATEGORY_COLORS[nodeTypeConfig.category] || 'bg-slate-100 text-slate-600';
   
+  // Icon Override
+  const iconName = (data.style as any)?.icon || nodeTypeConfig.iconName;
+  const Icon = ICON_MAP[iconName] || ICON_MAP['Server'];
+  
+  // Default category color
+  const defaultColorClass = CATEGORY_COLORS[nodeTypeConfig.category] || 'bg-slate-100 text-slate-600';
+  
+  // Custom style overrides
+  const customStyle = data.style as { 
+      backgroundColor?: string; 
+      color?: string;
+      containerBg?: string;
+      borderColor?: string;
+      borderWidth?: number;
+      borderRadius?: number;
+      labelColor?: string;
+      shape?: 'rectangle' | 'rounded' | 'circle' | 'diamond';
+  } | undefined;
+
+  const hasCustomIconStyle = !!customStyle?.backgroundColor || !!customStyle?.color;
+
   const attachedNote = data.attachedNote as string || '';
   const [showNote, setShowNote] = useState(false);
   const [noteContent, setNoteContent] = useState(attachedNote);
@@ -42,12 +61,56 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
   
   const commonHandleClass = `!w-2 !h-2 transition-opacity duration-200 ${handleVisibilityClass}`;
 
+  // Calculate shape styles
+  const shape = customStyle?.shape || 'rounded';
+  const isCircle = shape === 'circle';
+  const isDiamond = shape === 'diamond';
+  
+  const borderRadius = isCircle 
+    ? '50%' 
+    : customStyle?.borderRadius 
+        ? `${customStyle.borderRadius}px` 
+        : shape === 'rectangle' ? '0px' : undefined; 
+  
+  const finalBorderRadius = borderRadius ?? (shape === 'rectangle' ? '0px' : undefined);
+
   return (
     <div className="relative group">
-      <div className={clsx(
-        "w-[180px] bg-white rounded-lg border shadow-sm transition-all duration-200 relative z-10",
-        selected ? "border-blue-500 shadow-md ring-1 ring-blue-500" : "border-slate-200 hover:border-blue-300"
-      )}>
+      <div 
+        className={clsx(
+          "transition-all duration-200 relative z-10",
+          isCircle ? "w-[80px] h-[80px] flex items-center justify-center" : "w-[180px]",
+          isDiamond && "w-[120px] h-[120px] flex items-center justify-center", // Diamond needs square container
+          !finalBorderRadius && !isDiamond && "rounded-lg", // Default radius if not overridden and not diamond
+          !isDiamond && "border shadow-sm", // Diamond handles border differently
+          selected && !isDiamond ? "shadow-md ring-1 ring-blue-500" : (!isDiamond && "hover:border-blue-300"),
+          // Default styles if no custom styles
+          !customStyle?.containerBg && !isDiamond && "bg-white",
+          !customStyle?.borderColor && !isDiamond && (selected ? "border-blue-500" : "border-slate-200")
+        )}
+        style={{
+            backgroundColor: !isDiamond ? customStyle?.containerBg : undefined,
+            borderColor: !isDiamond ? customStyle?.borderColor : undefined,
+            borderWidth: !isDiamond && customStyle?.borderWidth ? `${customStyle.borderWidth}px` : undefined,
+            borderRadius: finalBorderRadius,
+        }}
+      >
+        {/* Diamond Shape Visual Layer */}
+        {isDiamond && (
+            <div 
+                className={clsx(
+                    "absolute inset-0 m-auto w-[70.7%] h-[70.7%] rotate-45 transition-all duration-200",
+                    "border shadow-sm",
+                    selected ? "shadow-md ring-1 ring-blue-500 border-blue-500" : "hover:border-blue-300 border-slate-200",
+                    !customStyle?.containerBg && "bg-white"
+                )}
+                style={{
+                    backgroundColor: customStyle?.containerBg,
+                    borderColor: customStyle?.borderColor,
+                    borderWidth: customStyle?.borderWidth ? `${customStyle.borderWidth}px` : undefined,
+                }}
+            />
+        )}
         {/* Target Handles (Input) */}
         <Handle type="target" position={Position.Top} id="t-top" className={clsx("!bg-slate-400 !-top-1", commonHandleClass)} />
         <Handle type="target" position={Position.Right} id="t-right" className={clsx("!bg-slate-400 !-right-1", commonHandleClass)} />
@@ -61,21 +124,45 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
         <Handle type="source" position={Position.Left} id="s-left" className={clsx("!bg-blue-500 !-left-1", commonHandleClass)} />
         
         {/* Header / Main Body */}
-        <div className="p-2 flex items-center gap-2">
+        <div className={clsx(
+            "p-2 flex items-center gap-2 relative z-10", // z-10 to sit above diamond background
+            (isCircle || isDiamond) && "flex-col justify-center text-center p-1"
+        )}>
           {/* Icon Container */}
-          <div className={clsx("w-8 h-8 rounded-md flex items-center justify-center shrink-0", colorClass)}>
+          <div 
+            className={clsx(
+              "w-8 h-8 rounded-md flex items-center justify-center shrink-0", 
+              !hasCustomIconStyle && defaultColorClass
+            )}
+            style={hasCustomIconStyle ? { 
+                backgroundColor: customStyle?.backgroundColor, 
+                color: customStyle?.color 
+            } : undefined}
+          >
             <Icon size={16} />
           </div>
           
           {/* Content */}
-          <div className="flex-1 min-w-0 mr-4">
-            <h3 className="text-xs font-semibold text-slate-900 truncate">
+          <div className={clsx(
+              "min-w-0",
+              (isCircle || isDiamond) ? "w-full" : "flex-1 mr-4"
+          )}>
+            <h3 
+                className={clsx(
+                    "text-xs font-semibold truncate",
+                    (isCircle || isDiamond) && "text-[10px]"
+                )}
+                style={{ color: customStyle?.labelColor || '#0f172a' }} // Default slate-900
+            >
               {(data.label as string) || nodeTypeConfig.label}
             </h3>
           </div>
 
           {/* Note Toggle Icon (Top Right) */}
-          <div className="absolute top-1 right-1">
+          <div className={clsx(
+              "absolute",
+              isCircle ? "top-0 right-0" : isDiamond ? "-top-2 -right-2" : "top-1 right-1"
+          )}>
             <button 
               onClick={toggleNote}
               className={clsx(
