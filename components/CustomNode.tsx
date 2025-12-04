@@ -57,6 +57,9 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
 
   const hasNote = !!attachedNote && attachedNote.trim().length > 0;
 
+  // Determine layout based on category
+  const isHorizontalLayout = ['General', 'Application'].includes(nodeTypeConfig.category);
+
   const handleVisibilityClass = readOnly 
     ? "opacity-0 pointer-events-none" 
     : "opacity-0 group-hover:opacity-100";
@@ -81,15 +84,15 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
       <div 
         className={clsx(
           "transition-all duration-200 relative z-10",
-          isCircle ? "w-[80px] h-[80px] flex items-center justify-center" : "w-[180px]",
+          isCircle ? "w-[80px] h-[80px] flex items-center justify-center" : (isHorizontalLayout ? "w-[180px]" : "w-auto"),
           isDiamond && "w-[120px] h-[120px] flex items-center justify-center", // Diamond needs square container
           !finalBorderRadius && !isDiamond && "rounded-lg", // Default radius if not overridden and not diamond
           !isDiamond && "border", // Diamond handles border differently
-          !customStyle?.shadow && !isDiamond && "shadow-sm", // Default shadow if not overridden
-          selected && !isDiamond ? "shadow-md ring-1 ring-blue-500" : (!isDiamond && "hover:border-blue-300"),
+          !customStyle?.shadow && !isDiamond && (isHorizontalLayout ? "shadow-sm" : "shadow-none"), // No shadow for vertical layout
+          selected && !isDiamond ? "shadow-md ring-1 ring-blue-500" : (!isDiamond && isHorizontalLayout && "hover:border-blue-300"),
           // Default styles if no custom styles
-          !customStyle?.containerBg && !isDiamond && "bg-white",
-          !customStyle?.borderColor && !isDiamond && (selected ? "border-blue-500" : "border-slate-200")
+          !customStyle?.containerBg && !isDiamond && (isHorizontalLayout ? "bg-white" : "bg-transparent"),
+          !customStyle?.borderColor && !isDiamond && (selected ? "border-blue-500" : (isHorizontalLayout ? "border-slate-200" : "border-transparent"))
         )}
         style={{
             backgroundColor: !isDiamond ? customStyle?.containerBg : undefined,
@@ -159,13 +162,15 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
         
         {/* Header / Main Body */}
         <div className={clsx(
-            "p-2 flex items-center gap-2 relative z-10", // z-10 to sit above diamond background
-            (isCircle || isDiamond) && "flex-col justify-center text-center p-1"
+            "p-2 flex relative z-10", // z-10 to sit above diamond background
+            (isCircle || isDiamond) && "flex-col justify-center text-center p-1",
+            !isCircle && !isDiamond && (isHorizontalLayout ? "flex-row items-center gap-2" : "flex-col items-center justify-center gap-1.5")
         )}>
           {/* Icon Container */}
           <div 
             className={clsx(
-              "w-8 h-8 rounded-md flex items-center justify-center shrink-0", 
+              "rounded-md flex items-center justify-center shrink-0",
+              isHorizontalLayout ? "w-8 h-8" : "w-12 h-12",
               !hasCustomIconStyle && !nodeTypeConfig.brandColor && defaultColorClass,
               data.type === 'step' && "rounded-full bg-yellow-100 text-yellow-600 font-bold",
               data.type === 'user' && "bg-purple-500 text-white",
@@ -184,23 +189,24 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
             ) : nodeTypeConfig.simpleIconName ? (
                 <SimpleIcon 
                   name={nodeTypeConfig.simpleIconName} 
-                  size={16}
+                  size={isHorizontalLayout ? 16 : 24}
                   color="white"
                 />
             ) : (
-                <Icon size={16} />
+                <Icon size={isHorizontalLayout ? 16 : 24} />
             )}
           </div>
           
           {/* Content */}
           <div className={clsx(
               "min-w-0",
-              (isCircle || isDiamond) ? "w-full" : "flex-1 mr-4"
+              (isCircle || isDiamond) ? "w-full" : (isHorizontalLayout ? "flex-1 mr-4" : "w-full")
           )}>
             <h3 
                 className={clsx(
-                    "text-xs font-semibold truncate",
-                    (isCircle || isDiamond) && "text-[10px]"
+                    "text-xs font-semibold",
+                    (isCircle || isDiamond) && "text-[10px]",
+                    isHorizontalLayout ? "truncate" : "text-center whitespace-nowrap"
                 )}
                 style={{ color: customStyle?.labelColor || '#0f172a' }} // Default slate-900
             >
