@@ -3,6 +3,7 @@ import { NODE_TYPES_LIST, ICON_MAP, CATEGORY_COLORS } from '../constants';
 import { Search, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { NodeCategory } from '../types';
 import clsx from 'clsx';
+import SimpleIcon from './SimpleIcon';
 
 const Sidebar = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,17 +74,23 @@ const Sidebar = () => {
                    {nodes.map(node => {
                       const Icon = ICON_MAP[node.iconName];
                       const colorClass = CATEGORY_COLORS[node.category];
+                      const hasBrandIcon = !!node.simpleIconName;
                       return (
                         <div
                           key={node.type}
                           className={clsx(
                             "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-blue-500/50 transition-all relative group/icon",
-                            colorClass
+                            !hasBrandIcon && colorClass
                           )}
+                          style={hasBrandIcon ? { backgroundColor: node.brandColor } : undefined}
                           onDragStart={(event) => onDragStart(event, node.type)}
                           draggable
                         >
-                          {Icon && <Icon size={20} />}
+                          {hasBrandIcon ? (
+                            <SimpleIcon name={node.simpleIconName!} size={20} color="white" />
+                          ) : (
+                            Icon && <Icon size={20} />
+                          )}
                           {/* Tooltip for collapsed view */}
                           <div className="absolute left-full ml-3 px-2 py-1.5 bg-slate-800 text-white text-xs font-medium rounded-md opacity-0 group-hover/icon:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl">
                             {node.label}
@@ -108,6 +115,7 @@ const Sidebar = () => {
                   {nodes.map(node => {
                     const Icon = ICON_MAP[node.iconName];
                     const colorClass = CATEGORY_COLORS[node.category];
+                    const hasBrandIcon = !!node.simpleIconName;
                     
                     return (
                       <div
@@ -116,8 +124,18 @@ const Sidebar = () => {
                         onDragStart={(event) => onDragStart(event, node.type)}
                         draggable
                       >
-                        <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${colorClass}`}>
-                          {Icon && <Icon size={16} />}
+                        <div 
+                          className={clsx(
+                            "w-8 h-8 rounded-md flex items-center justify-center shrink-0",
+                            !hasBrandIcon && colorClass
+                          )}
+                          style={hasBrandIcon ? { backgroundColor: node.brandColor } : undefined}
+                        >
+                          {hasBrandIcon ? (
+                            <SimpleIcon name={node.simpleIconName!} size={16} color="white" />
+                          ) : (
+                            Icon && <Icon size={16} />
+                          )}
                         </div>
                         <span className="text-sm font-medium text-slate-700 group-hover:text-blue-600">
                           {node.label}

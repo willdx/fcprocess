@@ -72,20 +72,20 @@ const workflowGraphs: Record<string, { nodes: Node[], edges: Edge[], defaultEdge
   },
   'wf-5': {
     nodes: [
-      { id: 'lvs', type: 'custom', data: { type: 'gateway', label: 'LVS', description: '10.9.130.200\n10.10.130.200' }, position: { x: 0, y: 300 } },
+      { id: 'lvs', type: 'custom', data: { type: 'loadBalancer', label: 'LVS', description: '10.9.130.200\n10.10.130.200' }, position: { x: 0, y: 300 } },
       { id: 'filter_sys', type: 'custom', data: { type: 'service', label: '兑奖过滤系统', description: 'Accessor-nio\nAccessor-nio-new' }, position: { x: 250, y: 300 } },
       { id: 'accessor_impl', type: 'custom', data: { type: 'service', label: 'Accessor-impl', description: '' }, position: { x: 550, y: 300 } },
       
       // Top Dependencies
       { id: 'wldbservice', type: 'custom', data: { type: 'service', label: 'wldbservice', description: '仅做依赖' }, position: { x: 450, y: 50 } },
       { id: 'dbservice', type: 'custom', data: { type: 'service', label: 'dbservice', description: '仅做依赖' }, position: { x: 650, y: 50 } },
-      { id: 'zookeeper', type: 'custom', data: { type: 'service', label: 'zookeeper', description: '' }, position: { x: 550, y: 150 } },
-      { id: 'qpid', type: 'custom', data: { type: 'service', label: 'QPID', description: '' }, position: { x: 800, y: 50 } },
-      { id: 'redis', type: 'custom', data: { type: 'database', label: 'Redis', description: '' }, position: { x: 800, y: 150 } },
+      { id: 'zookeeper', type: 'custom', data: { type: 'zookeeper', label: 'zookeeper', description: '' }, position: { x: 550, y: 150 } },
+      { id: 'qpid', type: 'custom', data: { type: 'rocketmq', label: 'QPID', description: '' }, position: { x: 800, y: 50 } },
+      { id: 'redis', type: 'custom', data: { type: 'redis', label: 'Redis', description: '' }, position: { x: 800, y: 150 } },
       
       // Bottom Dependencies
-      { id: 'kafka', type: 'custom', data: { type: 'service', label: 'Kafka', description: '' }, position: { x: 400, y: 500 } },
-      { id: 'oceanbase_pcf', type: 'custom', data: { type: 'database', label: 'Oceanbase', description: 'pcf数据库' }, position: { x: 600, y: 500 } },
+      { id: 'kafka', type: 'custom', data: { type: 'kafka', label: 'Kafka', description: '' }, position: { x: 400, y: 500 } },
+      { id: 'oceanbase_pcf', type: 'custom', data: { type: 'oceanbase', label: 'Oceanbase', description: 'pcf数据库' }, position: { x: 600, y: 500 } },
 
       // Main Flow Right
       { id: 'uap_interim', type: 'custom', data: { type: 'service', label: 'uap-cash-platform-interim', description: '' }, position: { x: 850, y: 300 } },
@@ -95,7 +95,7 @@ const workflowGraphs: Record<string, { nodes: Node[], edges: Edge[], defaultEdge
       // Scratcher Branch
       { id: 'scratcher_cash', type: 'custom', data: { type: 'service', label: 'scratcher-cash', description: '' }, position: { x: 1500, y: 150 } },
       { id: 'scratcher_core', type: 'custom', data: { type: 'service', label: 'scratcher-cash-core', description: '兑奖过滤' }, position: { x: 1700, y: 300 } },
-      { id: 'oceanbase_verify', type: 'custom', data: { type: 'database', label: 'OceanBase', description: '验奖' }, position: { x: 1700, y: 450 } },
+      { id: 'oceanbase_verify', type: 'custom', data: { type: 'oceanbase', label: 'OceanBase', description: '验奖' }, position: { x: 1700, y: 450 } },
     ],
     edges: [
       { id: 'e_lvs_filter', source: 'lvs', target: 'filter_sys', type: 'smoothstep', sourceHandle: 's-right', targetHandle: 't-left' },
