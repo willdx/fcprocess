@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Icons Test</title>
+</head>
+<body>
+    <h1>Simple Icons Test</h1>
+    <div id="test"></div>
+    
+    <script type="module">
+        import * as icons from 'simple-icons';
+        
+        console.log('Icons loaded:', Object.keys(icons).length);
+        console.log('siMysql:', icons.siMysql);
+        console.log('siRedis:', icons.siRedis);
+        
+        const testDiv = document.getElementById('test');
+        
+        // Test MySQL icon
+        if (icons.siMysql) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('width', '48');
+            svg.setAttribute('height', '48');
+            svg.setAttribute('fill', `#${icons.siMysql.hex}`);
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', icons.siMysql.path);
+            
+            svg.appendChild(path);
+            testDiv.appendChild(svg);
+            
+            const label = document.createElement('p');
+            label.textContent = `MySQL icon (${icons.siMysql.title})`;
+            testDiv.appendChild(label);
+        }
+    </script>
+</body>
+</html>

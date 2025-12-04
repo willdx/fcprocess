@@ -3,6 +3,7 @@ import { Handle, Position, NodeProps, useReactFlow } from '@xyflow/react';
 import { ICON_MAP, CATEGORY_COLORS, NODE_TYPES_LIST } from '../constants';
 import clsx from 'clsx';
 import { StickyNote } from 'lucide-react';
+import SimpleIcon from './SimpleIcon';
 
 const CustomNode = ({ id, data, selected }: NodeProps) => {
   const { updateNodeData } = useReactFlow();
@@ -165,7 +166,7 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
           <div 
             className={clsx(
               "w-8 h-8 rounded-md flex items-center justify-center shrink-0", 
-              !hasCustomIconStyle && defaultColorClass,
+              !hasCustomIconStyle && !nodeTypeConfig.brandColor && defaultColorClass,
               data.type === 'step' && "rounded-full bg-yellow-100 text-yellow-600 font-bold",
               data.type === 'user' && "bg-purple-500 text-white",
               data.type === 'message' && "bg-purple-500 text-white"
@@ -173,10 +174,19 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
             style={hasCustomIconStyle ? { 
                 backgroundColor: customStyle?.backgroundColor, 
                 color: customStyle?.color 
+            } : nodeTypeConfig.brandColor ? {
+                backgroundColor: nodeTypeConfig.brandColor,
+                color: 'white'
             } : undefined}
           >
             {data.type === 'step' ? (
                 <span>{data.stepNumber as string || '1'}</span>
+            ) : nodeTypeConfig.simpleIconName ? (
+                <SimpleIcon 
+                  name={nodeTypeConfig.simpleIconName} 
+                  size={16}
+                  color="white"
+                />
             ) : (
                 <Icon size={16} />
             )}

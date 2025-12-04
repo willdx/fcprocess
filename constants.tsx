@@ -35,30 +35,30 @@ export const NODE_TYPES_LIST: NodeTypeConfig[] = [
 
   
   // Application
-  { type: 'loadBalancer', label: 'LoadBalancer', category: 'Application', iconName: 'Network' },
+  { type: 'loadBalancer', label: 'LoadBalancer', category: 'Application', iconName: 'Network', simpleIconName: 'siNginx', brandColor: '#009639' },
   { type: 'gateway', label: 'Gateway', category: 'Application', iconName: 'Globe' },
   { type: 'service', label: 'Service', category: 'Application', iconName: 'Server' },
   
   // Database
-  { type: 'mysql', label: 'Mysql', category: 'Database', iconName: 'Database' },
-  { type: 'postgresql', label: 'Postgresql', category: 'Database', iconName: 'Database' },
-  { type: 'redis', label: 'Redis', category: 'Database', iconName: 'Layers' },
+  { type: 'mysql', label: 'Mysql', category: 'Database', iconName: 'Database', simpleIconName: 'siMysql', brandColor: '#4479A1' },
+  { type: 'postgresql', label: 'Postgresql', category: 'Database', iconName: 'Database', simpleIconName: 'siPostgresql', brandColor: '#4169E1' },
+  { type: 'redis', label: 'Redis', category: 'Database', iconName: 'Layers', simpleIconName: 'siRedis', brandColor: '#DC382D' },
   { type: 'oceanbase', label: 'OceanBase', category: 'Database', iconName: 'Database' },
   
   // Storage
-  { type: 'minio', label: 'MinIO', category: 'Storage', iconName: 'HardDrive' },
+  { type: 'minio', label: 'MinIO', category: 'Storage', iconName: 'HardDrive', simpleIconName: 'siMinio', brandColor: '#C72E49' },
   
   // Middleware
-  { type: 'kafka', label: 'Kafka', category: 'Middleware', iconName: 'Activity' },
-  { type: 'rocketmq', label: 'RocketMQ', category: 'Middleware', iconName: 'Activity' },
+  { type: 'kafka', label: 'Kafka', category: 'Middleware', iconName: 'Activity', simpleIconName: 'siApachekafka', brandColor: '#231F20' },
+  { type: 'rocketmq', label: 'RocketMQ', category: 'Middleware', iconName: 'Activity', simpleIconName: 'siApache', brandColor: '#D22128' },
   
   // Observability
-  { type: 'prometheus', label: 'Prometheus', category: 'Observability', iconName: 'Activity' },
-  { type: 'grafana', label: 'Grafana', category: 'Observability', iconName: 'BarChart3' },
-  { type: 'elasticsearch', label: 'ElasticSearch', category: 'Observability', iconName: 'Search' },
+  { type: 'prometheus', label: 'Prometheus', category: 'Observability', iconName: 'Activity', simpleIconName: 'siPrometheus', brandColor: '#E6522C' },
+  { type: 'grafana', label: 'Grafana', category: 'Observability', iconName: 'BarChart3', simpleIconName: 'siGrafana', brandColor: '#F46800' },
+  { type: 'elasticsearch', label: 'ElasticSearch', category: 'Observability', iconName: 'Search', simpleIconName: 'siElasticsearch', brandColor: '#005571' },
   
   // Coordination
-  { type: 'zookeeper', label: 'Zookeeper', category: 'Coordination', iconName: 'Share2' },
+  { type: 'zookeeper', label: 'Zookeeper', category: 'Coordination', iconName: 'Share2', simpleIconName: 'siApache', brandColor: '#D22128' },
   { type: 'nacos', label: 'Nacos', category: 'Coordination', iconName: 'Share2' },
 ];
 

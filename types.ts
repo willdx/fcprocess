@@ -14,6 +14,8 @@ export interface NodeTypeConfig {
   label: string;
   category: NodeCategory;
   iconName: string; // Lucide icon name
+  simpleIconName?: string; // Simple Icons name (e.g., 'siMysql', 'siRedis')
+  brandColor?: string; // Brand color for the icon container
   description?: string;
 }
 
