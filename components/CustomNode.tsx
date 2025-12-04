@@ -114,17 +114,47 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
                 }}
             />
         )}
-        {/* Target Handles (Input) */}
-        <Handle type="target" position={Position.Top} id="t-top" className={clsx("!bg-slate-400 !-top-1", commonHandleClass)} />
-        <Handle type="target" position={Position.Right} id="t-right" className={clsx("!bg-slate-400 !-right-1", commonHandleClass)} />
-        <Handle type="target" position={Position.Bottom} id="t-bottom" className={clsx("!bg-slate-400 !-bottom-1", commonHandleClass)} />
-        <Handle type="target" position={Position.Left} id="t-left" className={clsx("!bg-slate-400 !-left-1", commonHandleClass)} />
+        {/* Target Handles (Input) - 每边3个连接点 */}
+        {/* 上边 */}
+        <Handle type="target" position={Position.Top} id="t-top-left" style={{ left: '25%' }} className={clsx("!bg-slate-400 !-top-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Top} id="t-top" style={{ left: '50%' }} className={clsx("!bg-slate-400 !-top-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Top} id="t-top-right" style={{ left: '75%' }} className={clsx("!bg-slate-400 !-top-1", commonHandleClass)} />
+        
+        {/* 右边 */}
+        <Handle type="target" position={Position.Right} id="t-right-top" style={{ top: '25%' }} className={clsx("!bg-slate-400 !-right-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Right} id="t-right" style={{ top: '50%' }} className={clsx("!bg-slate-400 !-right-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Right} id="t-right-bottom" style={{ top: '75%' }} className={clsx("!bg-slate-400 !-right-1", commonHandleClass)} />
+        
+        {/* 下边 */}
+        <Handle type="target" position={Position.Bottom} id="t-bottom-left" style={{ left: '25%' }} className={clsx("!bg-slate-400 !-bottom-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Bottom} id="t-bottom" style={{ left: '50%' }} className={clsx("!bg-slate-400 !-bottom-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Bottom} id="t-bottom-right" style={{ left: '75%' }} className={clsx("!bg-slate-400 !-bottom-1", commonHandleClass)} />
+        
+        {/* 左边 */}
+        <Handle type="target" position={Position.Left} id="t-left-top" style={{ top: '25%' }} className={clsx("!bg-slate-400 !-left-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Left} id="t-left" style={{ top: '50%' }} className={clsx("!bg-slate-400 !-left-1", commonHandleClass)} />
+        <Handle type="target" position={Position.Left} id="t-left-bottom" style={{ top: '75%' }} className={clsx("!bg-slate-400 !-left-1", commonHandleClass)} />
 
-        {/* Source Handles (Output) */}
-        <Handle type="source" position={Position.Top} id="s-top" className={clsx("!bg-blue-500 !-top-1", commonHandleClass)} />
-        <Handle type="source" position={Position.Right} id="s-right" className={clsx("!bg-blue-500 !-right-1", commonHandleClass)} />
-        <Handle type="source" position={Position.Bottom} id="s-bottom" className={clsx("!bg-blue-500 !-bottom-1", commonHandleClass)} />
-        <Handle type="source" position={Position.Left} id="s-left" className={clsx("!bg-blue-500 !-left-1", commonHandleClass)} />
+        {/* Source Handles (Output) - 每边3个连接点 */}
+        {/* 上边 */}
+        <Handle type="source" position={Position.Top} id="s-top-left" style={{ left: '25%' }} className={clsx("!bg-blue-500 !-top-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Top} id="s-top" style={{ left: '50%' }} className={clsx("!bg-blue-500 !-top-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Top} id="s-top-right" style={{ left: '75%' }} className={clsx("!bg-blue-500 !-top-1", commonHandleClass)} />
+        
+        {/* 右边 */}
+        <Handle type="source" position={Position.Right} id="s-right-top" style={{ top: '25%' }} className={clsx("!bg-blue-500 !-right-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Right} id="s-right" style={{ top: '50%' }} className={clsx("!bg-blue-500 !-right-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Right} id="s-right-bottom" style={{ top: '75%' }} className={clsx("!bg-blue-500 !-right-1", commonHandleClass)} />
+        
+        {/* 下边 */}
+        <Handle type="source" position={Position.Bottom} id="s-bottom-left" style={{ left: '25%' }} className={clsx("!bg-blue-500 !-bottom-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Bottom} id="s-bottom" style={{ left: '50%' }} className={clsx("!bg-blue-500 !-bottom-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Bottom} id="s-bottom-right" style={{ left: '75%' }} className={clsx("!bg-blue-500 !-bottom-1", commonHandleClass)} />
+        
+        {/* 左边 */}
+        <Handle type="source" position={Position.Left} id="s-left-top" style={{ top: '25%' }} className={clsx("!bg-blue-500 !-left-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Left} id="s-left" style={{ top: '50%' }} className={clsx("!bg-blue-500 !-left-1", commonHandleClass)} />
+        <Handle type="source" position={Position.Left} id="s-left-bottom" style={{ top: '75%' }} className={clsx("!bg-blue-500 !-left-1", commonHandleClass)} />
         
         {/* Header / Main Body */}
         <div className={clsx(
