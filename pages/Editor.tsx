@@ -44,6 +44,7 @@ const nodeTypes = {
 
 const edgeTypes = {
   smoothstep: CustomEdge,
+  bezier: CustomEdge,
 };
 
 const proOptions: ProOptions = { hideAttribution: true };
@@ -51,12 +52,12 @@ const proOptions: ProOptions = { hideAttribution: true };
 // Make edges easier to interact with by increasing the hit area
 // Make edges easier to interact with by increasing the hit area
 const initialDefaultEdgeOptions: DefaultEdgeOptions = {
-  type: 'smoothstep',
+  type: 'bezier',
   interactionWidth: 25, 
   style: { stroke: '#94a3b8', strokeWidth: 1.5, strokeDasharray: '5 5' }, // Dashed neutral gray line
   markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }, // Match arrow color
   animated: false,
-  data: { pathType: 'smoothstep' }
+  data: { pathType: 'bezier' }
 };
 
 const EditorContent = () => {
@@ -213,12 +214,20 @@ const EditorContent = () => {
         type: isNote ? 'note' : 'custom',
         position,
         // Set default style dimensions for Note - SMALLER default size
-        style: isNote ? { width: 220, height: 80 } : undefined,
         data: { 
           type, 
           label: isNote ? '# New Note\nDouble click to edit' : (config?.label || 'Node'),
-          description: config?.description || 'New Node'
+          description: config?.description || 'New Node',
+          stepNumber: type === 'step' ? '1' : undefined,
+          style: (type === 'user') 
+            ? { shape: 'circle', containerBg: 'transparent', borderColor: 'transparent', shadow: 'none' } 
+            : (type === 'message')
+                ? { containerBg: 'transparent', borderColor: 'transparent', borderWidth: 0, shadow: 'none' }
+                : (type === 'step')
+                    ? { containerBg: 'transparent', borderColor: 'transparent', shadow: 'none' }
+                    : undefined
         },
+        style: isNote ? { width: 220, height: 80 } : undefined,
       };
 
       const newNodes = nodes.concat(newNode);
@@ -523,8 +532,8 @@ const EditorContent = () => {
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            onNodesChange={handleNodesChange}
+            onEdgesChange={handleEdgesChange}
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}

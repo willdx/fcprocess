@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   Server, Network, Globe, Database, HardDrive, 
   Layers, Activity, BarChart3, Search, Share2, 
-  StickyNote, LayoutGrid, Cpu, ShieldCheck
+  StickyNote, LayoutGrid, Cpu, ShieldCheck,
+  Circle, User, Mail
 } from 'lucide-react';
 import { NodeCategory, NodeTypeConfig } from './types';
 
@@ -10,7 +11,8 @@ import { NodeCategory, NodeTypeConfig } from './types';
 export const ICON_MAP: Record<string, React.FC<any>> = {
   Server, Network, Globe, Database, HardDrive, 
   Layers, Activity, BarChart3, Search, Share2, 
-  StickyNote, LayoutGrid, Cpu, ShieldCheck
+  StickyNote, LayoutGrid, Cpu, ShieldCheck,
+  Circle, User, Mail
 };
 
 export const CATEGORY_COLORS: Record<NodeCategory, string> = {
@@ -26,6 +28,9 @@ export const CATEGORY_COLORS: Record<NodeCategory, string> = {
 export const NODE_TYPES_LIST: NodeTypeConfig[] = [
   // General
   { type: 'note', label: '备注', category: 'General', iconName: 'StickyNote' },
+  { type: 'step', label: '步骤', category: 'General', iconName: 'Circle' },
+  { type: 'user', label: '用户', category: 'General', iconName: 'User' },
+  { type: 'message', label: '消息', category: 'General', iconName: 'Mail' },
   
   // Application
   { type: 'loadBalancer', label: 'LoadBalancer', category: 'Application', iconName: 'Network' },

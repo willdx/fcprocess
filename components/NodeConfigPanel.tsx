@@ -27,6 +27,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ selectedNode, onUpdat
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
   const [namespace, setNamespace] = useState('yf-pro-biz');
+  const [stepNumber, setStepNumber] = useState('');
   
   // Style State
   const [icon, setIcon] = useState('');
@@ -44,6 +45,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ selectedNode, onUpdat
       setLabel(selectedNode.data.label as string || '');
       setDescription(selectedNode.data.description as string || '');
       setNamespace(selectedNode.data.namespace as string || 'yf-pro-biz');
+      setStepNumber(selectedNode.data.stepNumber as string || '');
       
       // Style
       const style = selectedNode.data.style as any || {};
@@ -132,6 +134,20 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ selectedNode, onUpdat
                     className="w-full p-2 border border-slate-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:bg-slate-50 disabled:text-slate-500"
                 />
                 </div>
+
+                {selectedNode.type === 'custom' && (selectedNode.data.type === 'step') && (
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-500 uppercase">Step Number</label>
+                        <input 
+                            type="text" 
+                            value={stepNumber}
+                            onChange={(e) => setStepNumber(e.target.value)}
+                            onBlur={() => handleUpdate({ stepNumber })}
+                            disabled={readOnly}
+                            className="w-full p-2 border border-slate-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:bg-slate-50 disabled:text-slate-500"
+                        />
+                    </div>
+                )}
 
                 <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-500 uppercase">Namespace</label>

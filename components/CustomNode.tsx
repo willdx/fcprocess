@@ -25,6 +25,7 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
       borderRadius?: number;
       labelColor?: string;
       shape?: 'rectangle' | 'rounded' | 'circle' | 'diamond';
+      shadow?: string;
   } | undefined;
 
   const hasCustomIconStyle = !!customStyle?.backgroundColor || !!customStyle?.color;
@@ -82,7 +83,8 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
           isCircle ? "w-[80px] h-[80px] flex items-center justify-center" : "w-[180px]",
           isDiamond && "w-[120px] h-[120px] flex items-center justify-center", // Diamond needs square container
           !finalBorderRadius && !isDiamond && "rounded-lg", // Default radius if not overridden and not diamond
-          !isDiamond && "border shadow-sm", // Diamond handles border differently
+          !isDiamond && "border", // Diamond handles border differently
+          !customStyle?.shadow && !isDiamond && "shadow-sm", // Default shadow if not overridden
           selected && !isDiamond ? "shadow-md ring-1 ring-blue-500" : (!isDiamond && "hover:border-blue-300"),
           // Default styles if no custom styles
           !customStyle?.containerBg && !isDiamond && "bg-white",
@@ -93,6 +95,7 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
             borderColor: !isDiamond ? customStyle?.borderColor : undefined,
             borderWidth: !isDiamond && customStyle?.borderWidth ? `${customStyle.borderWidth}px` : undefined,
             borderRadius: finalBorderRadius,
+            boxShadow: !isDiamond ? customStyle?.shadow : undefined
         }}
       >
         {/* Diamond Shape Visual Layer */}
@@ -132,14 +135,21 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
           <div 
             className={clsx(
               "w-8 h-8 rounded-md flex items-center justify-center shrink-0", 
-              !hasCustomIconStyle && defaultColorClass
+              !hasCustomIconStyle && defaultColorClass,
+              data.type === 'step' && "rounded-full bg-yellow-100 text-yellow-600 font-bold",
+              data.type === 'user' && "bg-purple-500 text-white",
+              data.type === 'message' && "bg-purple-500 text-white"
             )}
             style={hasCustomIconStyle ? { 
                 backgroundColor: customStyle?.backgroundColor, 
                 color: customStyle?.color 
             } : undefined}
           >
-            <Icon size={16} />
+            {data.type === 'step' ? (
+                <span>{data.stepNumber as string || '1'}</span>
+            ) : (
+                <Icon size={16} />
+            )}
           </div>
           
           {/* Content */}
@@ -159,25 +169,27 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
           </div>
 
           {/* Note Toggle Icon (Top Right) */}
-          <div className={clsx(
-              "absolute",
-              isCircle ? "top-0 right-0" : isDiamond ? "-top-2 -right-2" : "top-1 right-1"
-          )}>
-            <button 
-              onClick={toggleNote}
-              className={clsx(
-                "p-0.5 rounded transition-colors",
-                showNote 
-                  ? "bg-yellow-100 text-yellow-600" 
-                  : hasNote 
-                    ? "text-yellow-500 hover:bg-yellow-50" 
-                    : "text-slate-300 hover:text-slate-500 hover:bg-slate-100"
-              )}
-              title={showNote ? "Hide Note" : "Show/Edit Note"}
-            >
-              <StickyNote size={12} className={clsx(hasNote && !showNote && "fill-yellow-100")} />
-            </button>
-          </div>
+          {!['step', 'user', 'message'].includes(data.type as string) && (
+            <div className={clsx(
+                "absolute",
+                isCircle ? "top-0 right-0" : isDiamond ? "-top-2 -right-2" : "top-1 right-1"
+            )}>
+                <button 
+                onClick={toggleNote}
+                className={clsx(
+                    "p-0.5 rounded transition-colors",
+                    showNote 
+                    ? "bg-yellow-100 text-yellow-600" 
+                    : hasNote 
+                        ? "text-yellow-500 hover:bg-yellow-50" 
+                        : "text-slate-300 hover:text-slate-500 hover:bg-slate-100"
+                )}
+                title={showNote ? "Hide Note" : "Show/Edit Note"}
+                >
+                <StickyNote size={12} className={clsx(hasNote && !showNote && "fill-yellow-100")} />
+                </button>
+            </div>
+          )}
         </div>
       </div>
 
