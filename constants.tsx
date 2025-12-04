@@ -31,6 +31,8 @@ export const NODE_TYPES_LIST: NodeTypeConfig[] = [
   { type: 'step', label: '步骤', category: 'General', iconName: 'Circle' },
   { type: 'user', label: '用户', category: 'General', iconName: 'User' },
   { type: 'message', label: '消息', category: 'General', iconName: 'Mail' },
+  { type: 'group', label: '分组', category: 'General', iconName: 'LayoutGrid' },
+
   
   // Application
   { type: 'loadBalancer', label: 'LoadBalancer', category: 'Application', iconName: 'Network' },

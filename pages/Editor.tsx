@@ -33,6 +33,7 @@ import EdgeConfigPanel from '../components/EdgeConfigPanel';
 import GlobalStylePanel from '../components/GlobalStylePanel';
 import CanvasControls from '../components/CanvasControls';
 import Toast from '../components/Toast';
+import GroupNode from '../components/GroupNode';
 import { getLayoutedElements } from '../utils/layoutUtils';
 import { NODE_TYPES_LIST } from '../constants';
 import { workflowService } from '../services/workflowService';
@@ -40,6 +41,7 @@ import { workflowService } from '../services/workflowService';
 const nodeTypes = {
   custom: CustomNode,
   note: NoteNode,
+  group: GroupNode,
 };
 
 const edgeTypes = {
@@ -208,26 +210,30 @@ const EditorContent = () => {
       const config = NODE_TYPES_LIST.find(t => t.type === type);
       
       const isNote = type === 'note';
+      const isGroup = type === 'group';
 
       const newNode: Node = {
         id: `node_${Date.now()}`,
-        type: isNote ? 'note' : 'custom',
+        type: isNote ? 'note' : (isGroup ? 'group' : 'custom'),
         position,
         // Set default style dimensions for Note - SMALLER default size
         data: { 
           type, 
-          label: isNote ? '# New Note\nDouble click to edit' : (config?.label || 'Node'),
+          label: isNote ? '# New Note\nDouble click to edit' : (isGroup ? '分组' : (config?.label || 'Node')),
           description: config?.description || 'New Node',
           stepNumber: type === 'step' ? '1' : undefined,
+          collapsed: false, // Initialize group as expanded
           style: (type === 'user') 
             ? { shape: 'circle', containerBg: 'transparent', borderColor: 'transparent', shadow: 'none' } 
             : (type === 'message')
                 ? { containerBg: 'transparent', borderColor: 'transparent', borderWidth: 0, shadow: 'none' }
                 : (type === 'step')
                     ? { containerBg: 'transparent', borderColor: 'transparent', shadow: 'none' }
-                    : undefined
+                    : (isGroup)
+                        ? { containerBg: 'rgba(240, 244, 255, 0.3)', borderColor: '#3b82f6' }
+                        : undefined
         },
-        style: isNote ? { width: 220, height: 80 } : undefined,
+        style: isNote ? { width: 220, height: 80 } : (isGroup ? { width: 400, height: 300 } : undefined),
       };
 
       const newNodes = nodes.concat(newNode);
@@ -236,6 +242,103 @@ const EditorContent = () => {
       setIsDirty(true);
     },
     [reactFlowInstance, nodes, edges, setNodes, setEdges]
+  );
+
+  const onNodeDragStop = useCallback(
+    (_: React.MouseEvent, node: Node) => {
+      // Only allow reparenting for non-group nodes (prevent nesting groups for now to keep it simple, or allow it if desired)
+      if (node.type === 'group') return;
+
+      const intersections = reactFlowInstance.getIntersectingNodes(node).filter((n) => n.type === 'group');
+      const groupNode = intersections[0];
+
+      // Case 1: Dragged into a group
+      if (groupNode && node.parentId !== groupNode.id) {
+        const nextNodes = nodes.map((n) => {
+          if (n.id === node.id) {
+            // Calculate relative position
+            // The node.position is currently in world coordinates (because we are dragging it)
+            // We need to convert it to be relative to the group node
+            // However, React Flow's onNodeDragStop gives us the node with its *current* position.
+            // If the node was already a child, its position is relative.
+            // If it was not a child, its position is absolute.
+            
+            // Actually, let's use a simpler approach:
+            // If we are dropping INTO a group, we need to calculate the relative position.
+            // node.position is absolute here because we just dragged it? 
+            // Wait, if it had a parentId before, node.position is relative to that parent.
+            // If we change parent, we need to adjust position.
+            
+            // Let's use the internal position which is absolute
+            const nodeAbsolutePosition = n.measured?.width ? { x: n.position.x, y: n.position.y } : n.position;
+            // Note: This logic can be tricky. Let's rely on the fact that if we change parentId, 
+            // we should calculate the new relative position.
+            
+            // A safer way is to use getInternalNode to get absolute handle? 
+            // Or just use the fact that we have the group node's position.
+            
+            // Let's assume node.position is correct for its CURRENT context.
+            // If it currently has NO parent, position is absolute.
+            // If it HAS a parent, position is relative.
+            
+            let absolutePos = { x: n.position.x, y: n.position.y };
+            if (n.parentId) {
+                const oldParent = nodes.find(p => p.id === n.parentId);
+                if (oldParent) {
+                    absolutePos = {
+                        x: n.position.x + oldParent.position.x,
+                        y: n.position.y + oldParent.position.y
+                    };
+                }
+            }
+
+            return {
+              ...n,
+              parentId: groupNode.id,
+              // extent: 'parent', // Removed to allow dragging out
+              position: {
+                x: absolutePos.x - groupNode.position.x,
+                y: absolutePos.y - groupNode.position.y,
+              },
+            };
+          }
+          return n;
+        });
+        
+        setNodes(nextNodes);
+        addToHistory(nextNodes, edges);
+        setIsDirty(true);
+      }
+      
+      // Case 2: Dragged out of a group (dropped on empty space)
+      else if (!groupNode && node.parentId) {
+        const nextNodes = nodes.map((n) => {
+          if (n.id === node.id) {
+            // Convert relative to absolute
+            const oldParent = nodes.find(p => p.id === n.parentId);
+            let newPos = n.position;
+            if (oldParent) {
+                newPos = {
+                    x: n.position.x + oldParent.position.x,
+                    y: n.position.y + oldParent.position.y
+                };
+            }
+            
+            const { parentId, extent, ...rest } = n;
+            return {
+              ...rest,
+              position: newPos,
+            };
+          }
+          return n;
+        });
+
+        setNodes(nextNodes);
+        addToHistory(nextNodes, edges);
+        setIsDirty(true);
+      }
+    },
+    [reactFlowInstance, nodes, edges, setNodes]
   );
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -537,6 +640,7 @@ const EditorContent = () => {
             onConnect={onConnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            onNodeDragStop={onNodeDragStop}
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             onPaneClick={onPaneClick}

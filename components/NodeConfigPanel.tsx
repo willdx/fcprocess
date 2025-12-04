@@ -186,7 +186,8 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ selectedNode, onUpdat
             </>
         ) : (
             <div className="space-y-6">
-                {/* Icon Settings */}
+                {/* Icon Settings - Hide for Group nodes */}
+                {selectedNode.type !== 'group' && (
                 <div className="space-y-4">
                     <h3 className="text-xs font-bold text-slate-900 border-b pb-1">ICON SETTINGS</h3>
                     
@@ -291,6 +292,8 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ selectedNode, onUpdat
                         </div>
                     </div>
                 </div>
+
+                )}
 
                 {/* Container Settings */}
                 <div className="space-y-4">
