@@ -89,20 +89,24 @@ const EditorContent = () => {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   
+  const [isSaving, setIsSaving] = useState(false);
+  
   // Ref to track if initial data load is complete to prevent false dirty state
   const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle Window Close/Refresh with unsaved changes (Browser level)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
+      // Only warn if dirty AND not currently saving
+      if (isDirty && !isSaving) {
         e.preventDefault();
         e.returnValue = '';
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isDirty]);
+  }, [isDirty, isSaving]);
 
   // Load Data
   useEffect(() => {
@@ -438,13 +442,40 @@ const EditorContent = () => {
     }
   };
 
-  const handleSave = async () => {
+  const saveWorkflow = async (isAuto: boolean = false) => {
     if (id) {
+      if (isAuto) setIsSaving(true);
+      
       await workflowService.saveWorkflowGraph(id, nodes, edges, defaultEdgeOptions);
+      
       setIsDirty(false);
-      setShowToast(true);
+      if (isAuto) {
+        // Keep "Saving..." for a moment so user sees it
+        setTimeout(() => setIsSaving(false), 500);
+      } else {
+        setShowToast(true);
+      }
     }
   };
+
+  // Auto-save Effect
+  useEffect(() => {
+    if (isDirty && !isLoading) {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+      
+      autoSaveTimerRef.current = setTimeout(() => {
+        saveWorkflow(true);
+      }, 2000); // Auto-save after 2 seconds of inactivity
+    }
+    
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [isDirty, nodes, edges, defaultEdgeOptions, isLoading]);
 
   const handleApplyGlobalToAll = () => {
     const newEdges = edges.map(e => ({
@@ -462,7 +493,7 @@ const EditorContent = () => {
 
   // Safe Navigation with Custom Modal
   const handleNavigation = (path: string) => {
-    if (isDirty) {
+    if (isDirty && !isSaving) {
       setPendingPath(path);
       setShowExitDialog(true);
     } else {
@@ -580,7 +611,7 @@ const EditorContent = () => {
               <span className="font-semibold text-slate-900 text-sm">{workflowName}</span>
             </div>
             <span className="text-xs text-slate-400">
-              {isDirty ? 'Unsaved changes' : 'All changes saved'}
+              {isSaving ? 'Saving...' : (isDirty ? 'Unsaved changes' : 'All changes saved')}
             </span>
           </div>
         </div>
@@ -609,17 +640,17 @@ const EditorContent = () => {
           <div className="h-6 w-px bg-slate-200 mx-2" />
 
           <button
-            onClick={handleSave}
-            disabled={!isDirty}
+            onClick={() => saveWorkflow(false)}
+            disabled={!isDirty && !isSaving}
             className={`
               flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all
-              ${isDirty 
+              ${(isDirty || isSaving)
                 ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow' 
                 : 'bg-slate-100 text-slate-400 cursor-not-allowed'}
             `}
           >
             <Save size={16} />
-            Save
+            {isSaving ? 'Saving...' : 'Save'}
           </button>
         </div>
       </header>
