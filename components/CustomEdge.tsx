@@ -27,7 +27,7 @@ const CustomEdge = ({
 
   const pathType = data?.pathType || 'smoothstep';
 
-  // Read custom control points from data or calculate defaults
+  // Read custom control points from data or calculate defaults (for Bezier)
   const getDefaultControlPoints = () => {
     const dx = targetX - sourceX;
     const dy = targetY - sourceY;
@@ -42,6 +42,16 @@ const CustomEdge = ({
   const savedControlPoints = data?.controlPoints as { controlPoint1: { x: number; y: number }; controlPoint2: { x: number; y: number } } | undefined;
   const defaultControlPoints = getDefaultControlPoints();
   const controlPoints = savedControlPoints || defaultControlPoints;
+
+  // Read waypoints from data or calculate default (for non-Bezier edges)
+  const getDefaultWaypoint = () => {
+    // Default waypoint at the midpoint (only used when editing)
+    return { x: (sourceX + targetX) / 2, y: (sourceY + targetY) / 2 };
+  };
+
+  const savedWaypoints = data?.waypoints as Array<{ x: number; y: number }> | undefined;
+  // Only use waypoints if they were explicitly saved
+  const waypoints = savedWaypoints || [getDefaultWaypoint()];
 
   const getPath = () => {
     const params = {
@@ -67,11 +77,90 @@ const CustomEdge = ({
           return [path, labelX, labelY];
         }
         return getBezierPath(params);
+      
       case 'straight':
+        // If waypoint is saved, convert to Bezier curve using waypoint as control point
+        if (savedWaypoints && waypoints.length > 0) {
+          const wp = waypoints[0];
+          // Create a smooth Bezier curve using the waypoint as both control points
+          const path = `M ${sourceX},${sourceY} Q ${wp.x},${wp.y} ${targetX},${targetY}`;
+          const labelX = wp.x;
+          const labelY = wp.y;
+          return [path, labelX, labelY];
+        }
         return getStraightPath(params);
+      
       case 'step':
-        return getSmoothStepPath({ ...params, borderRadius: 0 });
       case 'smoothstep':
+        // For step edges with custom waypoints, maintain orthogonal routing
+        if (savedWaypoints && waypoints.length > 0) {
+          const borderRadius = pathType === 'smoothstep' ? 20 : 0;
+          
+          // Use the waypoint to control the midpoint offset
+          const wp = waypoints[0];
+          const midX = wp.x;
+          const midY = wp.y;
+          
+          // Generate orthogonal path through the waypoint
+          let path = `M ${sourceX},${sourceY}`;
+          
+          // Determine if we should go horizontal first or vertical first
+          const dx = Math.abs(targetX - sourceX);
+          const dy = Math.abs(targetY - sourceY);
+          
+          if (pathType === 'smoothstep' && borderRadius > 0) {
+            // For smoothstep, use rounded corners
+            if (dx > dy) {
+              // Horizontal priority with smooth corners
+              const cornerDist = Math.min(borderRadius, Math.abs(midX - sourceX) / 2, Math.abs(targetY - sourceY) / 2);
+              
+              // First horizontal segment
+              path += ` L ${midX - cornerDist},${sourceY}`;
+              // Round corner to vertical
+              path += ` Q ${midX},${sourceY} ${midX},${sourceY + (targetY > sourceY ? cornerDist : -cornerDist)}`;
+              // Vertical segment
+              path += ` L ${midX},${targetY - (targetY > sourceY ? cornerDist : -cornerDist)}`;
+              // Round corner to horizontal
+              path += ` Q ${midX},${targetY} ${midX + (targetX > midX ? cornerDist : -cornerDist)},${targetY}`;
+              // Final horizontal segment
+              path += ` L ${targetX},${targetY}`;
+            } else {
+              // Vertical priority with smooth corners
+              const cornerDist = Math.min(borderRadius, Math.abs(midY - sourceY) / 2, Math.abs(targetX - sourceX) / 2);
+              
+              // First vertical segment
+              path += ` L ${sourceX},${midY - cornerDist}`;
+              // Round corner to horizontal
+              path += ` Q ${sourceX},${midY} ${sourceX + (targetX > sourceX ? cornerDist : -cornerDist)},${midY}`;
+              // Horizontal segment
+              path += ` L ${targetX - (targetX > sourceX ? cornerDist : -cornerDist)},${midY}`;
+              // Round corner to vertical
+              path += ` Q ${targetX},${midY} ${targetX},${midY + (targetY > midY ? cornerDist : -cornerDist)}`;
+              // Final vertical segment
+              path += ` L ${targetX},${targetY}`;
+            }
+          } else {
+            // For step (no border radius), use sharp corners
+            if (dx > dy) {
+              // Horizontal priority: go horizontal to waypoint, then vertical, then horizontal to target
+              path += ` L ${midX},${sourceY}`;
+              path += ` L ${midX},${targetY}`;
+            } else {
+              // Vertical priority: go vertical to waypoint, then horizontal, then vertical to target
+              path += ` L ${sourceX},${midY}`;
+              path += ` L ${targetX},${midY}`;
+            }
+            path += ` L ${targetX},${targetY}`;
+          }
+          
+          const labelX = midX;
+          const labelY = midY;
+          return [path, labelX, labelY];
+        }
+        
+        // Default behavior
+        return getSmoothStepPath({ ...params, borderRadius: pathType === 'smoothstep' ? 20 : 0 });
+      
       default:
         return getSmoothStepPath({ ...params, borderRadius: 20 });
     }
@@ -88,8 +177,11 @@ const CustomEdge = ({
   const dragStart = useRef({ x: 0, y: 0 });
   const originalOffset = useRef({ x: 0, y: 0 });
 
-  // State for dragging control points
+  // State for dragging control points (Bezier)
   const [draggingControlPoint, setDraggingControlPoint] = useState<'cp1' | 'cp2' | null>(null);
+
+  // State for dragging waypoints (other edge types)
+  const [draggingWaypointIndex, setDraggingWaypointIndex] = useState<number | null>(null);
 
   // Read properties from data
   const readOnly = data?.readOnly as boolean;
@@ -181,7 +273,7 @@ const CustomEdge = ({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Handle control point dragging
+  // Handle control point dragging (Bezier)
   const onControlPointMouseDown = (evt: React.MouseEvent, cpType: 'cp1' | 'cp2') => {
     evt.stopPropagation();
     evt.preventDefault();
@@ -218,6 +310,50 @@ const CustomEdge = ({
 
     const onMouseUp = () => {
       setDraggingControlPoint(null);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  // Handle waypoint dragging (for non-Bezier edges)
+  const onWaypointMouseDown = (evt: React.MouseEvent, waypointIndex: number) => {
+    evt.stopPropagation();
+    evt.preventDefault();
+
+    setDraggingWaypointIndex(waypointIndex);
+    const startPos = { x: evt.clientX, y: evt.clientY };
+    const currentWaypoint = waypoints[waypointIndex];
+
+    const onMouseMove = (moveEvt: MouseEvent) => {
+      const zoom = getZoom();
+      const dx = (moveEvt.clientX - startPos.x) / zoom;
+      const dy = (moveEvt.clientY - startPos.y) / zoom;
+
+      const newWaypoint = {
+        x: currentWaypoint.x + dx,
+        y: currentWaypoint.y + dy
+      };
+
+      const newWaypoints = waypoints.map((wp, idx) =>
+        idx === waypointIndex ? newWaypoint : wp
+      );
+
+      setEdges((edges) => edges.map((e) => {
+        if (e.id === id) {
+          return {
+            ...e,
+            data: { ...e.data, waypoints: newWaypoints }
+          };
+        }
+        return e;
+      }));
+    };
+
+    const onMouseUp = () => {
+      setDraggingWaypointIndex(null);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
@@ -324,6 +460,30 @@ const CustomEdge = ({
               title="拖拽以调整曲线"
             />
           </div>
+        </EdgeLabelRenderer>
+      )}
+
+      {/* Waypoints for non-Bezier edges (always show when selected) */}
+      {selected && pathType !== 'bezier' && !readOnly && (
+        <EdgeLabelRenderer>
+          {waypoints.map((waypoint, index) => (
+            <div
+              key={`waypoint-${index}`}
+              style={{
+                position: 'absolute',
+                transform: `translate(-50%, -50%) translate(${waypoint.x}px, ${waypoint.y}px)`,
+                pointerEvents: 'all',
+                zIndex: 1000,
+              }}
+              className="nodrag nopan"
+            >
+              <div
+                onMouseDown={(e) => onWaypointMouseDown(e, index)}
+                className="w-3 h-3 bg-green-500 border-2 border-white rounded-full cursor-move hover:scale-125 transition-transform shadow-md"
+                title={pathType === 'straight' ? "拖拽变为曲线" : "拖拽调整路径"}
+              />
+            </div>
+          ))}
         </EdgeLabelRenderer>
       )}
 
