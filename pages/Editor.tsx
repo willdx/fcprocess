@@ -273,32 +273,37 @@ const EditorContent = () => {
       if (node.type === 'group') return;
 
       const intersections = reactFlowInstance.getIntersectingNodes(node).filter((n) => n.type === 'group');
-      const groupNode = intersections[0];
+      
+      // Find a group that is NOT the current parent (priority target)
+      const newGroupNode = intersections.find(n => n.id !== node.parentId);
+      // Find the current parent if it's in intersections
+      const currentParentNode = intersections.find(n => n.id === node.parentId);
 
-      // Case 1: Dragged into a group
-      if (groupNode && node.parentId !== groupNode.id) {
+      // Case 1: Dragged into a NEW group
+      if (newGroupNode) {
         setNodes((nds) => nds.map((n) => {
           if (n.id === node.id) {
-            // Get the node's current absolute position
-            // If it already has a parent, we need to convert from relative to absolute first
-            let absoluteX = n.position.x;
-            let absoluteY = n.position.y;
+            // Calculate absolute position of the dragged node
+            // If it was previously a child, convert relative to absolute
+            // If it was top-level, it's already absolute
+            let absoluteX = node.position.x;
+            let absoluteY = node.position.y;
             
-            if (n.parentId) {
-              const oldParent = nds.find(p => p.id === n.parentId);
+            if (node.parentId) {
+              const oldParent = nds.find(p => p.id === node.parentId);
               if (oldParent) {
-                absoluteX = n.position.x + oldParent.position.x;
-                absoluteY = n.position.y + oldParent.position.y;
+                absoluteX = node.position.x + oldParent.position.x;
+                absoluteY = node.position.y + oldParent.position.y;
               }
             }
 
-            // Now convert to relative position within the new group
+            // Convert to relative position within the new group
             return {
               ...n,
-              parentId: groupNode.id,
+              parentId: newGroupNode.id,
               position: {
-                x: absoluteX - groupNode.position.x,
-                y: absoluteY - groupNode.position.y,
+                x: absoluteX - newGroupNode.position.x,
+                y: absoluteY - newGroupNode.position.y,
               },
             };
           }
@@ -308,34 +313,57 @@ const EditorContent = () => {
         setIsDirty(true);
       }
       
-      // Case 2: Dragged out of a group
-      else if (!groupNode && node.parentId) {
-        setNodes((nds) => nds.map((n) => {
-          if (n.id === node.id) {
-            // Convert from relative to absolute position
-            const oldParent = nds.find(p => p.id === n.parentId);
-            let absoluteX = n.position.x;
-            let absoluteY = n.position.y;
+      // Case 2: Dragged OUT of the current group (or sticking out)
+      else if (node.parentId) {
+        const parent = nodes.find(n => n.id === node.parentId);
+        
+        // Check if node is fully contained in parent
+        // If parent is not found, or node is sticking out, detach it
+        let shouldDetach = true;
+        
+        if (parent) {
+            const nodeWidth = node.measured?.width || node.width || 150;
+            const nodeHeight = node.measured?.height || node.height || 40;
+            const parentWidth = parent.measured?.width || parent.width || 300;
+            const parentHeight = parent.measured?.height || parent.height || 300;
             
-            if (oldParent) {
-              absoluteX = n.position.x + oldParent.position.x;
-              absoluteY = n.position.y + oldParent.position.y;
+            // Check bounds (relative position)
+            const isInsideX = node.position.x >= 0 && (node.position.x + nodeWidth) <= parentWidth;
+            const isInsideY = node.position.y >= 0 && (node.position.y + nodeHeight) <= parentHeight;
+            
+            if (isInsideX && isInsideY) {
+                shouldDetach = false; // Fully inside, keep it
             }
-            
-            // Remove parent and use absolute position
-            const { parentId, extent, ...rest } = n;
-            return {
-              ...rest,
-              position: {
-                x: absoluteX,
-                y: absoluteY,
-              },
-            };
-          }
-          return n;
-        }));
+        }
 
-        setIsDirty(true);
+        if (shouldDetach) {
+            setNodes((nds) => nds.map((n) => {
+              if (n.id === node.id) {
+                // Convert from relative to absolute position
+                const oldParent = nds.find(p => p.id === n.parentId);
+                let absoluteX = node.position.x;
+                let absoluteY = node.position.y;
+                
+                if (oldParent) {
+                  absoluteX = node.position.x + oldParent.position.x;
+                  absoluteY = node.position.y + oldParent.position.y;
+                }
+                
+                // Remove parent and use absolute position
+                const { parentId, extent, ...rest } = n;
+                return {
+                  ...rest,
+                  position: {
+                    x: absoluteX,
+                    y: absoluteY,
+                  },
+                };
+              }
+              return n;
+            }));
+
+            setIsDirty(true);
+        }
       }
     },
     [reactFlowInstance, nodes, edges, setNodes]

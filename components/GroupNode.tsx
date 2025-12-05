@@ -1,9 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { NodeResizer, NodeProps, useReactFlow, Node } from '@xyflow/react';
+import { NodeResizer, NodeProps, useReactFlow, Node, Handle, Position } from '@xyflow/react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import clsx from 'clsx';
 
 const GroupNode = ({ id, data, selected }: NodeProps) => {
   const { getNodes, setNodes } = useReactFlow();
+  const [isHovered, setIsHovered] = useState(false);
+  
   // We use internal state for UI toggle, but actual logic should be based on data to persist
   const isCollapsed = data.collapsed as boolean;
 
@@ -64,18 +67,25 @@ const GroupNode = ({ id, data, selected }: NodeProps) => {
 
   }, [id, isCollapsed, getNodes, setNodes]);
 
+  const handleVisibilityClass = "opacity-0 group-hover:opacity-100";
+  const commonHandleClass = `!w-2 !h-2 transition-opacity duration-200 ${handleVisibilityClass}`;
+
   return (
-    <>
+    <div 
+      className="relative w-full h-full group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <NodeResizer 
-        isVisible={selected && !isCollapsed} 
+        isVisible={(selected || isHovered) && !isCollapsed} 
         minWidth={100} 
         minHeight={50} 
-        lineStyle={{ border: 'none' }}
-        handleStyle={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#3b82f6', border: '2px solid white' }}
+        lineStyle={{ border: '1px solid #3b82f6', opacity: 0.5 }}
+        handleStyle={{ width: 12, height: 12, borderRadius: 2, backgroundColor: '#3b82f6', border: '2px solid white' }}
       />
       
       <div 
-        className="relative w-full h-full rounded-lg border-2 transition-all duration-200 group overflow-hidden"
+        className="relative w-full h-full rounded-lg border-2 transition-all duration-200 overflow-hidden"
         style={{
           backgroundColor: isCollapsed ? 'white' : backgroundColor,
           minHeight: '50px',
@@ -99,7 +109,45 @@ const GroupNode = ({ id, data, selected }: NodeProps) => {
           <div className="w-full h-full pt-10" />
         )}
       </div>
-    </>
+
+      {/* Connection Handles - Matching CustomNode Style */}
+      
+      {/* Top - 3 Handles */}
+      <Handle type="target" position={Position.Top} id="t-top-left" style={{ left: '25%', top: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+      <Handle type="target" position={Position.Top} id="t-top" style={{ left: '50%', top: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+      <Handle type="target" position={Position.Top} id="t-top-right" style={{ left: '75%', top: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+
+      <Handle type="source" position={Position.Top} id="s-top-left" style={{ left: '25%', top: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+      <Handle type="source" position={Position.Top} id="s-top" style={{ left: '50%', top: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+      <Handle type="source" position={Position.Top} id="s-top-right" style={{ left: '75%', top: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+      
+      {/* Right - 3 Handles */}
+      <Handle type="target" position={Position.Right} id="t-right-top" style={{ top: '25%', right: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+      <Handle type="target" position={Position.Right} id="t-right" style={{ top: '50%', right: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+      <Handle type="target" position={Position.Right} id="t-right-bottom" style={{ top: '75%', right: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+
+      <Handle type="source" position={Position.Right} id="s-right-top" style={{ top: '25%', right: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+      <Handle type="source" position={Position.Right} id="s-right" style={{ top: '50%', right: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+      <Handle type="source" position={Position.Right} id="s-right-bottom" style={{ top: '75%', right: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+
+      {/* Bottom - 3 Handles */}
+      <Handle type="target" position={Position.Bottom} id="t-bottom-left" style={{ left: '25%', bottom: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+      <Handle type="target" position={Position.Bottom} id="t-bottom" style={{ left: '50%', bottom: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+      <Handle type="target" position={Position.Bottom} id="t-bottom-right" style={{ left: '75%', bottom: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+
+      <Handle type="source" position={Position.Bottom} id="s-bottom-left" style={{ left: '25%', bottom: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+      <Handle type="source" position={Position.Bottom} id="s-bottom" style={{ left: '50%', bottom: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+      <Handle type="source" position={Position.Bottom} id="s-bottom-right" style={{ left: '75%', bottom: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+
+      {/* Left - 3 Handles */}
+      <Handle type="target" position={Position.Left} id="t-left-top" style={{ top: '25%', left: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+      <Handle type="target" position={Position.Left} id="t-left" style={{ top: '50%', left: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+      <Handle type="target" position={Position.Left} id="t-left-bottom" style={{ top: '75%', left: -6 }} className={clsx("!bg-slate-400", commonHandleClass)} />
+
+      <Handle type="source" position={Position.Left} id="s-left-top" style={{ top: '25%', left: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+      <Handle type="source" position={Position.Left} id="s-left" style={{ top: '50%', left: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+      <Handle type="source" position={Position.Left} id="s-left-bottom" style={{ top: '75%', left: -6 }} className={clsx("!bg-blue-500", commonHandleClass)} />
+    </div>
   );
 };
 
