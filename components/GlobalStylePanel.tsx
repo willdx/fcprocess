@@ -175,6 +175,20 @@ const GlobalStylePanel: React.FC<GlobalStylePanelProps> = ({ defaultOptions, onU
             </div>
         </section>
 
+        {/* Apply to All Button */}
+        <div className="pt-4 border-t border-slate-100">
+            <button
+                onClick={onApplyToAll}
+                className="w-full py-2 px-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            >
+                <Waypoints size={16} />
+                Apply to All Connections
+            </button>
+            <p className="text-xs text-slate-400 mt-2 text-center">
+                Updates all existing connections to match these settings.
+            </p>
+        </div>
+
 
 
       </div>

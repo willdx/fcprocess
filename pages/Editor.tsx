@@ -121,14 +121,33 @@ const EditorContent = () => {
 
         // Load graph
         const graph = await workflowService.getWorkflowGraph(id);
+        
+        // Hydrate edges with explicit styles if missing, based on the loaded default options
+        // This ensures that existing edges don't change appearance when the "active tool" settings change
+        const loadedDefaults = graph.defaultEdgeOptions || initialDefaultEdgeOptions;
+        
+        const hydratedEdges = graph.edges.map(edge => ({
+            ...edge,
+            // If style is missing, bake in the default style
+            style: edge.style || loadedDefaults.style,
+            // If markerEnd is missing, bake in the default marker
+            markerEnd: edge.markerEnd || loadedDefaults.markerEnd,
+            // If animated is undefined, bake in the default
+            animated: edge.animated ?? loadedDefaults.animated,
+            // If type is missing, bake in the default type
+            type: edge.type || loadedDefaults.type || 'smoothstep',
+            // Merge data
+            data: { ...loadedDefaults.data, ...edge.data }
+        }));
+
         setNodes(graph.nodes);
-        setEdges(graph.edges);
-        if (graph.defaultEdgeOptions) {
-          setDefaultEdgeOptions(graph.defaultEdgeOptions);
-        }
+        setEdges(hydratedEdges);
+        
+        // Set the "Active Tool" settings to what was saved, or defaults
+        setDefaultEdgeOptions(loadedDefaults);
         
         // Init history
-        setHistory([{ nodes: graph.nodes, edges: graph.edges }]);
+        setHistory([{ nodes: graph.nodes, edges: hydratedEdges }]);
         setHistoryIndex(0);
         
         setIsLoading(false);
@@ -179,7 +198,7 @@ const EditorContent = () => {
     setEdges(newEdges);
     addToHistory(nodes, newEdges);
     setIsDirty(true);
-  }, [edges, nodes, setNodes, setEdges]);
+  }, [edges, nodes, setNodes, setEdges, defaultEdgeOptions]);
 
   const addToHistory = (n: Node[], e: Edge[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -624,7 +643,7 @@ const EditorContent = () => {
             onNodeContextMenu={onNodeContextMenu}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
-            defaultEdgeOptions={defaultEdgeOptions}
+            defaultEdgeOptions={initialDefaultEdgeOptions}
             proOptions={proOptions}
             fitView
             className="bg-slate-50"
