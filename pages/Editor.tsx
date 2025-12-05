@@ -16,7 +16,8 @@ import {
   EdgeChange,
   DefaultEdgeOptions,
   MarkerType,
-  SelectionMode
+  SelectionMode,
+  reconnectEdge
 } from '@xyflow/react';
 
 import { useNavigate, useParams } from 'react-router-dom';
@@ -205,6 +206,13 @@ const EditorContent = () => {
     addToHistory(nodes, newEdges);
     setIsDirty(true);
   }, [edges, nodes, setNodes, setEdges, defaultEdgeOptions]);
+
+  const onReconnect = useCallback((oldEdge: Edge, newConnection: Connection) => {
+    const newEdges = reconnectEdge(oldEdge, newConnection, edges);
+    setEdges(newEdges);
+    addToHistory(nodes, newEdges);
+    setIsDirty(true);
+  }, [edges, nodes, setEdges]);
 
   const addToHistory = (n: Node[], e: Edge[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -695,6 +703,7 @@ const EditorContent = () => {
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
             onConnect={onConnect}
+            onReconnect={onReconnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
             onNodeDragStop={onNodeDragStop}
@@ -711,6 +720,7 @@ const EditorContent = () => {
             panOnDrag={interactionMode === 'pan'}
             selectionOnDrag={interactionMode === 'select'}
             selectionMode={SelectionMode.Partial}
+            edgesReconnectable={true}
           >
             <Background color="#e2e8f0" variant={BackgroundVariant.Dots} />
             
