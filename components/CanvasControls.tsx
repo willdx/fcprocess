@@ -3,7 +3,8 @@ import { Panel } from '@xyflow/react';
 import { 
   RotateCcw, RotateCw, Maximize, Layout, 
   Spline, Minus, CornerDownRight, Waypoints,
-  MoreHorizontal, Play, Pause
+  MoreHorizontal, Play, Pause,
+  MousePointer2, Hand
 } from 'lucide-react';
 import { Edge } from '@xyflow/react';
 
@@ -17,6 +18,8 @@ interface CanvasControlsProps {
   showHistory?: boolean;
   selectedEdge?: Edge | null;
   onEdgeUpdate?: (edgeId: string, data: any) => void;
+  interactionMode?: 'pan' | 'select';
+  onInteractionModeChange?: (mode: 'pan' | 'select') => void;
 }
 
 const ControlButton = ({ onClick, disabled, icon: Icon, label, active }: any) => (
@@ -48,7 +51,9 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
   canRedo,
   showHistory = true,
   selectedEdge,
-  onEdgeUpdate
+  onEdgeUpdate,
+  interactionMode = 'pan',
+  onInteractionModeChange
 }) => {
   const handleStyleChange = (key: string, value: any) => {
     if (selectedEdge && onEdgeUpdate) {
@@ -71,6 +76,24 @@ const CanvasControls: React.FC<CanvasControlsProps> = ({
     <Panel position="bottom-center" className="mb-8 flex flex-col gap-2 items-center">
       {/* Edge controls removed as they are now in the right panel */}
       <div className="bg-white p-1 rounded-lg shadow-lg border border-slate-200 flex items-center gap-1">
+        {onInteractionModeChange && (
+          <>
+            <ControlButton 
+              onClick={() => onInteractionModeChange('select')} 
+              active={interactionMode === 'select'}
+              icon={MousePointer2} 
+              label="Select Mode" 
+            />
+            <ControlButton 
+              onClick={() => onInteractionModeChange('pan')} 
+              active={interactionMode === 'pan'}
+              icon={Hand} 
+              label="Pan Mode" 
+            />
+            <div className="w-px h-6 bg-slate-200 mx-1" />
+          </>
+        )}
+
         {showHistory && (
           <>
             <ControlButton 

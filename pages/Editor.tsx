@@ -15,7 +15,8 @@ import {
   NodeChange,
   EdgeChange,
   DefaultEdgeOptions,
-  MarkerType
+  MarkerType,
+  SelectionMode
 } from '@xyflow/react';
 
 import { useNavigate, useParams } from 'react-router-dom';
@@ -75,6 +76,7 @@ const EditorContent = () => {
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [workflowName, setWorkflowName] = useState('Loading...');
   const [isLoading, setIsLoading] = useState(true);
+  const [interactionMode, setInteractionMode] = useState<'pan' | 'select'>('select');
   
   // History State
   const [history, setHistory] = useState<{nodes: Node[], edges: Edge[]}[]>([]);
@@ -706,6 +708,9 @@ const EditorContent = () => {
             proOptions={proOptions}
             fitView
             className="bg-slate-50"
+            panOnDrag={interactionMode === 'pan'}
+            selectionOnDrag={interactionMode === 'select'}
+            selectionMode={SelectionMode.Partial}
           >
             <Background color="#e2e8f0" variant={BackgroundVariant.Dots} />
             
@@ -719,6 +724,8 @@ const EditorContent = () => {
               showHistory={true}
               selectedEdge={selectedEdge}
               onEdgeUpdate={handleEdgeUpdate}
+              interactionMode={interactionMode}
+              onInteractionModeChange={setInteractionMode}
             />
           </ReactFlow>
 
