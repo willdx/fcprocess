@@ -147,7 +147,17 @@ const EditorContent = () => {
             data: { ...loadedDefaults.data, ...edge.data }
         }));
 
-        setNodes(graph.nodes);
+        // Helper to sort nodes so groups come first
+        // This prevents "Parent node not found" errors in React Flow
+        const sortNodes = (nodes: Node[]): Node[] => {
+          return [...nodes].sort((a, b) => {
+              if (a.type === 'group' && b.type !== 'group') return -1;
+              if (a.type !== 'group' && b.type === 'group') return 1;
+              return 0;
+          });
+        };
+
+        setNodes(sortNodes(graph.nodes));
         setEdges(hydratedEdges);
         
         // Set the "Active Tool" settings to what was saved, or defaults
@@ -277,106 +287,132 @@ const EditorContent = () => {
     [reactFlowInstance, nodes, edges, setNodes, setEdges]
   );
 
-  const onNodeDragStop = useCallback(
-    (_: React.MouseEvent, node: Node) => {
+      const onNodeDragStop = useCallback(
+    (_: React.MouseEvent, draggedNode: Node) => {
       // Only allow reparenting for non-group nodes
-      if (node.type === 'group') return;
+      if (draggedNode.type === 'group') return;
 
-      const intersections = reactFlowInstance.getIntersectingNodes(node).filter((n) => n.type === 'group');
-      
-      // Find a group that is NOT the current parent (priority target)
-      const newGroupNode = intersections.find(n => n.id !== node.parentId);
-      // Find the current parent if it's in intersections
-      const currentParentNode = intersections.find(n => n.id === node.parentId);
+      // Get the LATEST node state from React Flow to ensure we have up-to-date position
+      const node = reactFlowInstance.getNode(draggedNode.id);
+      if (!node) return;
 
-      // Case 1: Dragged into a NEW group
-      if (newGroupNode) {
-        setNodes((nds) => nds.map((n) => {
-          if (n.id === node.id) {
-            // Calculate absolute position of the dragged node
-            // If it was previously a child, convert relative to absolute
-            // If it was top-level, it's already absolute
-            let absoluteX = node.position.x;
-            let absoluteY = node.position.y;
-            
-            if (node.parentId) {
-              const oldParent = nds.find(p => p.id === node.parentId);
-              if (oldParent) {
-                absoluteX = node.position.x + oldParent.position.x;
-                absoluteY = node.position.y + oldParent.position.y;
-              }
-            }
-
-            // Convert to relative position within the new group
-            return {
-              ...n,
-              parentId: newGroupNode.id,
-              position: {
-                x: absoluteX - newGroupNode.position.x,
-                y: absoluteY - newGroupNode.position.y,
-              },
+      // Calculate the node's current ABSOLUTE position
+      // If it has a parent, its .position is relative. We need to convert it to absolute.
+      let nodeAbsolutePosition = { ...node.position };
+      if (node.parentId) {
+        const parentNode = reactFlowInstance.getNode(node.parentId);
+        if (parentNode) {
+            nodeAbsolutePosition = {
+                x: node.position.x + (parentNode.position.x ?? 0),
+                y: node.position.y + (parentNode.position.y ?? 0),
             };
-          }
-          return n;
-        }));
-        
-        setIsDirty(true);
+        }
       }
+
+      // Find intersecting groups
+      // We use the dragged node's dimensions for intersection checking
+      const nodeWidth = node.measured?.width || node.width || 150;
+      const nodeHeight = node.measured?.height || node.height || 40;
       
-      // Case 2: Dragged OUT of the current group (or sticking out)
-      else if (node.parentId) {
-        const parent = nodes.find(n => n.id === node.parentId);
-        
-        // Check if node is fully contained in parent
-        // If parent is not found, or node is sticking out, detach it
-        let shouldDetach = true;
-        
-        if (parent) {
-            const nodeWidth = node.measured?.width || node.width || 150;
-            const nodeHeight = node.measured?.height || node.height || 40;
-            const parentWidth = parent.measured?.width || parent.width || 300;
-            const parentHeight = parent.measured?.height || parent.height || 300;
-            
-            // Check bounds (relative position)
-            const isInsideX = node.position.x >= 0 && (node.position.x + nodeWidth) <= parentWidth;
-            const isInsideY = node.position.y >= 0 && (node.position.y + nodeHeight) <= parentHeight;
-            
-            if (isInsideX && isInsideY) {
-                shouldDetach = false; // Fully inside, keep it
-            }
-        }
+      // Helper to check intersection with a group (using absolute coordinates)
+      // We check if the CENTER of the node is inside the group
+      const isIntersectingGroup = (group: Node) => {
+        const groupPos = group.position; // Groups are usually top-level, so position is absolute
+        const groupWidth = group.measured?.width || group.width || 300;
+        const groupHeight = group.measured?.height || group.height || 300;
 
-        if (shouldDetach) {
-            setNodes((nds) => nds.map((n) => {
-              if (n.id === node.id) {
-                // Convert from relative to absolute position
-                const oldParent = nds.find(p => p.id === n.parentId);
-                let absoluteX = node.position.x;
-                let absoluteY = node.position.y;
-                
-                if (oldParent) {
-                  absoluteX = node.position.x + oldParent.position.x;
-                  absoluteY = node.position.y + oldParent.position.y;
-                }
-                
-                // Remove parent and use absolute position
-                const { parentId, extent, ...rest } = n;
-                return {
-                  ...rest,
-                  position: {
-                    x: absoluteX,
-                    y: absoluteY,
-                  },
-                };
-              }
-              return n;
-            }));
+        const nodeCenterX = nodeAbsolutePosition.x + nodeWidth / 2;
+        const nodeCenterY = nodeAbsolutePosition.y + nodeHeight / 2;
 
-            setIsDirty(true);
+        return (
+            nodeCenterX > groupPos.x &&
+            nodeCenterX < groupPos.x + groupWidth &&
+            nodeCenterY > groupPos.y &&
+            nodeCenterY < groupPos.y + groupHeight
+        );
+      };
+
+      const groups = reactFlowInstance.getNodes().filter(n => n.type === 'group');
+      const intersectingGroup = groups.find(g => g.id !== node.id && isIntersectingGroup(g));
+
+      // Determine the target parent (if any)
+      // We prioritize a NEW group over the current parent if they overlap, 
+      // but usually we just want the one we are dropped INTO.
+      // If we are currently in a group, and we are still inside it, we stay.
+      // If we are dropped into a DIFFERENT group, we switch.
+      // If we are dropped OUTSIDE any group, we detach.
+
+      const currentParentId = node.parentId;
+      const targetGroupId = intersectingGroup?.id;
+
+      // Helper to sort nodes so groups come first
+      // This prevents "Parent node not found" errors in React Flow
+      const sortNodes = (nodes: Node[]): Node[] => {
+        return [...nodes].sort((a, b) => {
+            if (a.type === 'group' && b.type !== 'group') return -1;
+            if (a.type !== 'group' && b.type === 'group') return 1;
+            return 0;
+        });
+      };
+
+      // Scenario 1: Moving into a group (from outside or another group)
+      if (targetGroupId && targetGroupId !== currentParentId) {
+        const targetGroup = reactFlowInstance.getNode(targetGroupId);
+        if (targetGroup) {
+            console.log(`[DragStop] Moving node ${node.id} into group ${targetGroupId}`);
+            
+            // Calculate relative position inside the new group
+            const relativePosition = {
+                x: nodeAbsolutePosition.x - targetGroup.position.x,
+                y: nodeAbsolutePosition.y - targetGroup.position.y,
+            };
+
+            // Defer update to avoid race conditions with React Flow's internal drag handling
+            setTimeout(() => {
+                setNodes((nds) => {
+                    const updatedNodes = nds.map((n) => {
+                        if (n.id === node.id) {
+                            return {
+                                ...n,
+                                parentId: targetGroupId,
+                                position: relativePosition,
+                                // extent: 'parent', // REMOVED: Allow dragging out
+                            };
+                        }
+                        return n;
+                    });
+                    return sortNodes(updatedNodes);
+                });
+                setIsDirty(true);
+            }, 0);
         }
       }
+      // Scenario 2: Moving out of a group (to root)
+      else if (!targetGroupId && currentParentId) {
+        console.log(`[DragStop] Detaching node ${node.id} from group ${currentParentId}`);
+        
+        // Defer update
+        setTimeout(() => {
+            setNodes((nds) => {
+                const updatedNodes = nds.map((n) => {
+                    if (n.id === node.id) {
+                        const { parentId, extent, ...rest } = n;
+                        return {
+                            ...rest,
+                            position: nodeAbsolutePosition, // Use absolute position
+                        };
+                    }
+                    return n;
+                });
+                return sortNodes(updatedNodes);
+            });
+            setIsDirty(true);
+        }, 0);
+      }
+      // Scenario 3: Staying in the same group (or staying outside) -> No structural change needed
+      // React Flow handles the position update automatically.
     },
-    [reactFlowInstance, nodes, edges, setNodes]
+    [reactFlowInstance, setNodes]
   );
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
